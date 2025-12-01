@@ -3,7 +3,9 @@ from collections import Counter, defaultdict
 
 import numpy as np
 import h5py
-from scipy.misc import imread, imresize
+
+# NOTE: The preprocessing logic never uses scipy.misc (removed in SciPy >= 1.3),
+# so we drop the legacy import to stay compatible with modern environments.
 
 
 """
