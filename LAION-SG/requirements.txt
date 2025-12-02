@@ -184,11 +184,11 @@ timm==0.4.12
 tinycss2==1.3.0
 tokenizers==0.20.3
 tomli==2.0.1
-torch==2.1.1+cu118
+torch>=2.3
 torch-fidelity==0.3.0
-torchaudio==2.1.1+cu118
+torchaudio>=2.3
 torchmetrics==1.4.1
-torchvision==0.16.1+cu118
+torchvision>=0.18
 tornado==6.4.1
 tqdm==4.66.5
 traitlets==5.14.3
@@ -208,7 +208,7 @@ webencodings==0.5.1
 websocket-client==1.8.0
 Werkzeug==3.0.3
 widgetsnbextension==4.0.11
-xformers==0.0.23+cu118
+xformers>=0.0.25
 yapf==0.43.0
 yarl==1.9.4
 zipp==3.19.2
