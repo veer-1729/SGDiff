@@ -51,6 +51,11 @@ def parse_args():
         default=5,
         help='Beam search width.')
     parser.add_argument(
+        '--batch_size',
+        type=int,
+        default=4,
+        help='Number of images per captioning batch.')
+    parser.add_argument(
         '--overwrite',
         action='store_true',
         help='Overwrite existing output file if present.')
@@ -92,20 +97,37 @@ def generate_captions(args):
     captions = []
     missing = 0
 
+    def process_batch(batch_images, batch_paths):
+        if not batch_images:
+            return
+        inputs = processor(
+            images=batch_images,
+            return_tensors='pt',
+            padding=True).to(args.device)
+        with torch.no_grad():
+            outputs = model.generate(
+                **inputs,
+                num_beams=args.num_beams,
+                max_length=args.max_length)
+        for rel_path, sequence in zip(batch_paths, outputs):
+            caption = processor.decode(sequence, skip_special_tokens=True)
+            captions.append({'image_path': rel_path, 'caption': caption})
+
+    batch_images, batch_paths = [], []
     for rel_path in tqdm(rel_paths, desc='Captioning images'):
         abs_path = args.image_root / rel_path
         if not abs_path.exists():
             missing += 1
             continue
-        image = Image.open(abs_path).convert('RGB')
-        inputs = processor(images=image, return_tensors='pt').to(args.device)
-        with torch.no_grad():
-            out = model.generate(
-                **inputs,
-                num_beams=args.num_beams,
-                max_length=args.max_length)
-        caption = processor.decode(out[0], skip_special_tokens=True)
-        captions.append({'image_path': rel_path, 'caption': caption})
+        with Image.open(abs_path) as img:
+            batch_images.append(img.convert('RGB'))
+        batch_paths.append(rel_path)
+        if len(batch_images) >= args.batch_size:
+            process_batch(batch_images, batch_paths)
+            batch_images, batch_paths = [], []
+
+    # Flush remainder
+    process_batch(batch_images, batch_paths)
 
     if missing:
         print(f'Warning: {missing} images were missing on disk and skipped.')
