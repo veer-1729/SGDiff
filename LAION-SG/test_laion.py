@@ -115,6 +115,9 @@ model = create_model_and_transforms(
         pretrained_image=args.pretrained_image,
     ).to(device)
 
+model = model.half()
+model.eval()
+
 checkpoint = torch.load("./baseline3_100.pt", map_location=device)
 
 model.load_state_dict(checkpoint['state_dict'])
