@@ -43,6 +43,7 @@ vae = AutoencoderKL.from_pretrained(
         args.stable_diffusion_checkpoint,
         subfolder="vae",
         variant="fp16",
+        torch_dtype=torch.float16,
         cache_dir=args.cache_dir
     ).to(device)
 
@@ -70,12 +71,27 @@ text_encoder_cls_two = import_model_class_from_model_name_or_path(
 
 
 text_encoder_one = text_encoder_cls_one.from_pretrained(
-        args.stable_diffusion_checkpoint, subfolder="text_encoder", variant="fp16",cache_dir=args.cache_dir).to(device)
+        args.stable_diffusion_checkpoint,
+        subfolder="text_encoder",
+        variant="fp16",
+        torch_dtype=torch.float16,
+        cache_dir=args.cache_dir,
+    ).to(device)
 text_encoder_two = text_encoder_cls_two.from_pretrained(
-        args.stable_diffusion_checkpoint, subfolder="text_encoder_2", variant="fp16",cache_dir=args.cache_dir).to(device)
+        args.stable_diffusion_checkpoint,
+        subfolder="text_encoder_2",
+        variant="fp16",
+        torch_dtype=torch.float16,
+        cache_dir=args.cache_dir,
+    ).to(device)
 
 unet = UNet2DConditionModel.from_pretrained(
-    args.stable_diffusion_checkpoint, subfolder="unet", variant="fp16", cache_dir=args.cache_dir).to(device)
+    args.stable_diffusion_checkpoint,
+    subfolder="unet",
+    variant="fp16",
+    torch_dtype=torch.float16,
+    cache_dir=args.cache_dir,
+).to(device)
 
 
 pipeline = StableDiffusionXLPipeline.from_pretrained(
@@ -84,8 +100,8 @@ pipeline = StableDiffusionXLPipeline.from_pretrained(
     text_encoder=text_encoder_one,
     text_encoder_2=text_encoder_two,
     unet=unet,
-    torch_dtype='fp16',
-    cache_dir=args.cache_dir
+    torch_dtype=torch.float16,
+    cache_dir=args.cache_dir,
 )
 
 model = create_model_and_transforms(
