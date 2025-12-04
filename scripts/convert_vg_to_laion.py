@@ -108,98 +108,98 @@ def convert_split(
         attributes_per_obj = f["attributes_per_object"][:]
         object_attributes = f.get("object_attributes")
 
-    valid_object_ids = set(int(x) for x in object_ids.ravel() if x >= 0)
-    attr_lookup = build_attribute_lookup(attributes_json, valid_object_ids, attr_names_list)
+        valid_object_ids = set(int(x) for x in object_ids.ravel() if x >= 0)
+        attr_lookup = build_attribute_lookup(attributes_json, valid_object_ids, attr_names_list)
 
-    total = len(image_ids)
-    attr_row = 0
+        total = len(image_ids)
+        attr_row = 0
 
-    for idx in range(total):
-        if max_samples is not None and len(output) >= max_samples:
-            break
-        num_obj = int(objects_per_img[idx])
-        num_rel = int(relationships_per_img[idx])
-        if num_obj <= 0 or num_rel <= 0:
-            continue
-
-        rel_path = _decode_path(image_paths[idx])
-        caption = caption_map.get(rel_path, "")
-
-        items = []
-        slot_to_item = {}
-        for slot in range(num_obj):
-            name_idx = int(object_names[idx, slot])
-            if name_idx < 0:
+        for idx in range(total):
+            if max_samples is not None and len(output) >= max_samples:
+                break
+            num_obj = int(objects_per_img[idx])
+            num_rel = int(relationships_per_img[idx])
+            if num_obj <= 0 or num_rel <= 0:
                 continue
-            label = obj_names_list[name_idx]
-            object_id = int(object_ids[idx, slot])
-            attributes = attr_lookup.get(object_id, [])
-            if not attributes and attr_names_list:
-                attr_count = int(attributes_per_obj[idx, slot]) if attributes_per_obj.ndim == 2 else 0
-                if attr_count > 0 and object_attributes is not None:
-                    if object_attributes.ndim == 3:
-                        attr_slice = object_attributes[idx, slot, :attr_count]
-                    else:
-                        attr_slice = object_attributes[attr_row, :attr_count]
-                    tmp = []
-                    for attr_idx in attr_slice:
-                        attr_idx = int(attr_idx)
-                        if 0 <= attr_idx < len(attr_names_list):
-                            tmp.append(attr_names_list[attr_idx])
-                    attributes = tmp
-            if object_attributes is not None and object_attributes.ndim == 2:
-                attr_row += 1
-            item = {
-                "item_id": len(items),
-                "label": label,
-                "attributes": attributes,
-                "global_item_id": object_id,
+
+            rel_path = _decode_path(image_paths[idx])
+            caption = caption_map.get(rel_path, "")
+
+            items = []
+            slot_to_item = {}
+            for slot in range(num_obj):
+                name_idx = int(object_names[idx, slot])
+                if name_idx < 0:
+                    continue
+                label = obj_names_list[name_idx]
+                object_id = int(object_ids[idx, slot])
+                attributes = attr_lookup.get(object_id, [])
+                if not attributes and attr_names_list:
+                    attr_count = int(attributes_per_obj[idx, slot]) if attributes_per_obj.ndim == 2 else 0
+                    if attr_count > 0 and object_attributes is not None:
+                        if object_attributes.ndim == 3:
+                            attr_slice = object_attributes[idx, slot, :attr_count]
+                        else:
+                            attr_slice = object_attributes[attr_row, :attr_count]
+                        tmp = []
+                        for attr_idx in attr_slice:
+                            attr_idx = int(attr_idx)
+                            if 0 <= attr_idx < len(attr_names_list):
+                                tmp.append(attr_names_list[attr_idx])
+                        attributes = tmp
+                if object_attributes is not None and object_attributes.ndim == 2:
+                    attr_row += 1
+                item = {
+                    "item_id": len(items),
+                    "label": label,
+                    "attributes": attributes,
+                    "global_item_id": object_id,
+                }
+                slot_to_item[slot] = item["item_id"]
+                items.append(item)
+
+            if not items:
+                continue
+
+            relations = []
+            global_ids = []
+            for rel_idx in range(num_rel):
+                sub_slot = int(rel_subjects[idx, rel_idx])
+                obj_slot = int(rel_objects[idx, rel_idx])
+                pred_idx = int(rel_predicates[idx, rel_idx])
+                if (
+                    sub_slot not in slot_to_item
+                    or obj_slot not in slot_to_item
+                    or pred_idx < 0
+                    or pred_idx >= len(pred_names_list)
+                ):
+                    continue
+                relations.append(
+                    {
+                        "item1": slot_to_item[sub_slot],
+                        "item2": slot_to_item[obj_slot],
+                        "relation": pred_names_list[pred_idx],
+                    }
+                )
+                global_ids.append(
+                    {
+                        "item1": items[slot_to_item[sub_slot]]["global_item_id"],
+                        "item2": items[slot_to_item[obj_slot]]["global_item_id"],
+                    }
+                )
+
+            if not relations:
+                continue
+
+            entry = {
+                "name": rel_path,
+                "img_id": f"vg_{int(image_ids[idx])}",
+                "caption_ori": caption,
+                "items": items,
+                "relations": relations,
+                "global_ids": global_ids,
             }
-            slot_to_item[slot] = item["item_id"]
-            items.append(item)
-
-        if not items:
-            continue
-
-        relations = []
-        global_ids = []
-        for rel_idx in range(num_rel):
-            sub_slot = int(rel_subjects[idx, rel_idx])
-            obj_slot = int(rel_objects[idx, rel_idx])
-            pred_idx = int(rel_predicates[idx, rel_idx])
-            if (
-                sub_slot not in slot_to_item
-                or obj_slot not in slot_to_item
-                or pred_idx < 0
-                or pred_idx >= len(pred_names_list)
-            ):
-                continue
-            relations.append(
-                {
-                    "item1": slot_to_item[sub_slot],
-                    "item2": slot_to_item[obj_slot],
-                    "relation": pred_names_list[pred_idx],
-                }
-            )
-            global_ids.append(
-                {
-                    "item1": items[slot_to_item[sub_slot]]["global_item_id"],
-                    "item2": items[slot_to_item[obj_slot]]["global_item_id"],
-                }
-            )
-
-        if not relations:
-            continue
-
-        entry = {
-            "name": rel_path,
-            "img_id": f"vg_{int(image_ids[idx])}",
-            "caption_ori": caption,
-            "items": items,
-            "relations": relations,
-            "global_ids": global_ids,
-        }
-        output.append(entry)
+            output.append(entry)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w") as f:
