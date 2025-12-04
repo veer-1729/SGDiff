@@ -154,6 +154,25 @@ def trainer():
     else:
         logging.info("xFormers not available; install xformers for lower VRAM use.")
 
+    precision_lower = args.precision.lower()
+    if precision_lower == "fp16":
+        # FP16 behaves fine on all CUDA archs
+        autocast_dtype = torch.float16
+    else:
+        # default to bfloat16 only on A100+; fall back to fp16 on older GPUs
+        capability = torch.cuda.get_device_capability() if torch.cuda.is_available() else (0, 0)
+        if capability >= (8, 0):
+            autocast_dtype = torch.bfloat16 if precision_lower in {"amp", "amp_bfloat16", "bf16"} else torch.float16
+        else:
+            if precision_lower in {"amp", "amp_bfloat16", "bf16"}:
+                logging.warning(
+                    "Requested %s but GPU capability %s lacks native bf16; falling back to fp16.",
+                    args.precision,
+                    capability,
+                )
+            autocast_dtype = torch.float16
+
+    args.autocast_dtype = autocast_dtype
     try:
         unet.enable_gradient_checkpointing()
         logging.info("Enabled UNet gradient checkpointing.")

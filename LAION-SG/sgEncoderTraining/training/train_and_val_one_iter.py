@@ -45,7 +45,7 @@ def validate_by_iter(step,
 
     model.eval()
 
-    autocast = get_autocast(args.precision)
+    autocast = get_autocast(args.precision, getattr(args, "autocast_dtype", None))
 
     batch_size = args.val_batch_size
 
@@ -146,7 +146,8 @@ def train_by_iters(model,
                    val_count=10,
                    accumulation_steps=2):
 
-    autocast = get_autocast(args.precision)
+
+    autocast = get_autocast(args.precision, getattr(args, "autocast_dtype", None))
 
     model.train()
 
