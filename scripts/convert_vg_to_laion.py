@@ -104,10 +104,13 @@ def convert_split(
                 attr_count = int(attributes_per_obj[idx, slot]) if attributes_per_obj.ndim == 2 else 0
                 attributes = []
                 if attr_count > 0 and attr_names_list:
-                    attr_indices = object_attributes[idx, slot, :attr_count]
-                    for attr_idx in attr_indices:
+                    if object_attributes.ndim == 3:
+                        attr_slice = object_attributes[idx, slot, :attr_count]
+                    else:
+                        attr_slice = []
+                    for attr_idx in attr_slice:
                         attr_idx = int(attr_idx)
-                        if attr_idx >= 0 and attr_idx < len(attr_names_list):
+                        if 0 <= attr_idx < len(attr_names_list):
                             attributes.append(attr_names_list[attr_idx])
                 item = {
                     "item_id": len(items),
