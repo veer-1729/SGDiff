@@ -198,8 +198,17 @@ def trainer():
 
     del text_encoder_one, text_encoder_two, tokenizer_one, tokenizer_two
 
-    #checkpoint = torch.load(args.pretrained_path, map_location=accelerator.device)
-    #model.load_state_dict(checkpoint['state_dict'])
+    if args.pretrained_sgencoder_path:
+        if os.path.isfile(args.pretrained_sgencoder_path):
+            logging.info(f"Loading sgEncoder weights from {args.pretrained_sgencoder_path}")
+            checkpoint = torch.load(args.pretrained_sgencoder_path, map_location=accelerator.device)
+            state_dict = checkpoint.get("state_dict", checkpoint)
+            missing, unexpected = model.load_state_dict(state_dict, strict=False)
+            if missing or unexpected:
+                logging.warning("Missing keys: %s", missing)
+                logging.warning("Unexpected keys: %s", unexpected)
+        else:
+            logging.warning("Pretrained sgEncoder path %s not found.", args.pretrained_sgencoder_path)
 
     torch.manual_seed(args.seed)
     if accelerator.is_main_process:

@@ -28,6 +28,7 @@ def parse_args():
     parser.add_argument("--stable_diffusion_checkpoint", type=str, default="stabilityai/stable-diffusion-xl-base-1.0")
     parser.add_argument("--refiner_checkpoint", type=str, default="stabilityai/stable-diffusion-xl-refiner-1.0")
     parser.add_argument("--compile_model", type=bool, default=False)
+    parser.add_argument("--pretrained_sgencoder_path", type=str, default="", help="Path to pretrained sgEncoder checkpoint.")
 
     parser.add_argument("--seed", type=int, default=42)
 
