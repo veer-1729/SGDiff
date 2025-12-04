@@ -1,7 +1,4 @@
 import os
-os.environ["HF_DATASETS_OFFLINE"] = "1"
-os.environ["TRANSFORMERS_OFFLINE"] = "1"
-
 from datetime import datetime
 from torch import optim
 from torch.cuda.amp import GradScaler
