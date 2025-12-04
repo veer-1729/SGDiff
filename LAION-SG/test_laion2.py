@@ -29,6 +29,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--use_orphaned_objects", type=bool, default=True)
     parser.add_argument("--include_relationships", type=bool, default=True)
     parser.add_argument("--workers", type=int, default=0, help="Number of dataloader workers.")
+    parser.add_argument("--graph_width", type=int, default=512)
+    parser.add_argument("--num_graph_layer", type=int, default=5)
+    parser.add_argument("--embed_dim", type=int, default=512)
+    parser.add_argument("--model_config_json", type=str, default="")
+    parser.add_argument("--precision", type=str, default="fp16")
+    parser.add_argument("--force_quick_gelu", action="store_true")
+    parser.add_argument("--pretrained_image", action="store_true")
     return parser.parse_args()
 
 
