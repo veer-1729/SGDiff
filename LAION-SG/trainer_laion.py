@@ -20,6 +20,7 @@ from diffusers import (
     DDPMScheduler,
     UNet2DConditionModel,
 )
+from diffusers.utils.import_utils import is_xformers_available
 from accelerate import Accelerator, DistributedDataParallelKwargs
 
 accelerator = Accelerator(kwargs_handlers=[DistributedDataParallelKwargs(find_unused_parameters=True)])
@@ -143,8 +144,21 @@ def trainer():
         args.stable_diffusion_checkpoint, subfolder="unet", variant="fp16",cache_dir = args.cache_dir
     ).to(accelerator.device)
 
-    # enable xformers
-    #unet.enable_xformers_memory_efficient_attention()
+    # enable xformers + gradient checkpointing to reduce VRAM
+    if is_xformers_available():
+        try:
+            unet.enable_xformers_memory_efficient_attention()
+            logging.info("Enabled xFormers memory efficient attention.")
+        except Exception as e:
+            logging.warning("Failed to enable xFormers attention: %s", e)
+    else:
+        logging.info("xFormers not available; install xformers for lower VRAM use.")
+
+    try:
+        unet.enable_gradient_checkpointing()
+        logging.info("Enabled UNet gradient checkpointing.")
+    except Exception as e:
+        logging.warning("Failed to enable gradient checkpointing: %s", e)
 
     # We only train the additional adapter SGencoder layers
     vae.requires_grad_(False)
