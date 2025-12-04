@@ -56,8 +56,16 @@ def validate_by_iter(step,
 
     for i, batch in enumerate(dataloader):
 
-        all_imgs, all_triples, all_global_ids, all_isolated_items, all_text_prompts, all_original_sizes, all_crop_top_lefts = [
-            x for x in batch]
+        (
+            all_imgs,
+            all_triples,
+            all_global_ids,
+            all_isolated_items,
+            all_text_prompts,
+            all_original_sizes,
+            all_crop_top_lefts,
+            all_img_ids,
+        ) = [x for x in batch]
 
         all_imgs = torch.cat(all_imgs, dim=0).to(accelerator.device)
 
