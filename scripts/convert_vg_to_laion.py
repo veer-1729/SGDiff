@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import random
 from pathlib import Path
 from typing import Dict, List
 
@@ -112,9 +113,12 @@ def convert_split(
         attr_lookup = build_attribute_lookup(attributes_json, valid_object_ids, attr_names_list)
 
         total = len(image_ids)
+        indices = list(range(total))
+        if max_samples is not None and max_samples < total:
+            random.shuffle(indices)
         attr_row = 0
 
-        for idx in range(total):
+        for idx in indices:
             if max_samples is not None and len(output) >= max_samples:
                 break
             num_obj = int(objects_per_img[idx])
