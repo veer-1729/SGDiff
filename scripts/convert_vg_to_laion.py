@@ -19,18 +19,34 @@ Each entry in the output JSON looks like:
   "relations": [
     {"item1": 0, "item2": 1, "relation": "flying"},
     ...
+  ],
+  "constraints": [
+    {"type": "presence", "object": "boy", "polarity": "positive"},
+    {"type": "attribute", "object": "boy", "attribute": "young"},
+    ...
   ]
 }
 
 This allows training or fine-tuning the SDXL-SG pipeline with VG data.
+Constraints are auto-generated from the scene graph to enable constraint-conditioned generation.
 """
 from __future__ import annotations
 
 import argparse
 import json
 import random
+import sys
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Any, Optional
+
+# Add LAION-SG to path for constraint imports BEFORE importing heuristic module
+LAION_SG_PATH = Path(__file__).parent.parent / "LAION-SG"
+if LAION_SG_PATH.exists():
+    sys.path.insert(0, str(LAION_SG_PATH))
+
+from sgEncoderTraining.constraints.heuristic_constraints import (
+    generate_constraints_from_caption_and_sg,
+)
 
 import h5py
 
@@ -85,6 +101,12 @@ def convert_split(
     attributes_json: Path | None,
     output_path: Path,
     max_samples: int | None = None,
+    # Constraint generation settings (for heuristic_caption+SG constraints)
+    generate_constraints: bool = True,
+    max_presence: int = 2,
+    max_attribute: int = 2,
+    max_relation: int = 1,
+    max_count: int = 1,
 ) -> None:
     with vocab_path.open("r") as f:
         vocab = json.load(f)
@@ -203,6 +225,19 @@ def convert_split(
                 "relations": relations,
                 "global_ids": global_ids,
             }
+
+            # Generate caption+SG-based constraints if enabled and heuristic is available
+            if generate_constraints:
+                entry["constraints"] = generate_constraints_from_caption_and_sg(
+                    caption=caption,
+                    items=items,
+                    relations=relations,
+                    max_presence=max_presence,
+                    max_attribute=max_attribute,
+                    max_relation=max_relation,
+                    max_count=max_count,
+                )
+
             output.append(entry)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -212,13 +247,26 @@ def convert_split(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Convert VG HDF5 splits to LAION-SG JSON.")
+    parser = argparse.ArgumentParser(description="Convert VG HDF5 splits to LAION-SG JSON with constraints.")
     parser.add_argument("--h5_path", type=Path, required=True, help="Path to VG split HDF5 file.")
     parser.add_argument("--vocab_json", type=Path, default=Path("datasets/vg/vocab.json"))
     parser.add_argument("--captions_json", type=Path, default=Path("datasets/vg/captions.json"))
     parser.add_argument("--attributes_json", type=Path, default=Path("datasets/vg/attributes.json"))
     parser.add_argument("--output_json", type=Path, required=True)
     parser.add_argument("--max_samples", type=int, default=None, help="Optional limit for debugging.")
+    
+    # Constraint generation arguments (for heuristic caption+SG constraints)
+    parser.add_argument("--no_constraints", action="store_true",
+                        help="Disable constraint generation")
+    parser.add_argument("--max_presence", type=int, default=2,
+                        help="Max presence constraints per image (default: 2)")
+    parser.add_argument("--max_attribute", type=int, default=2,
+                        help="Max attribute constraints per image (default: 2)")
+    parser.add_argument("--max_relation", type=int, default=1,
+                        help="Max relation constraints per image (default: 1)")
+    parser.add_argument("--no_count", action="store_true",
+                        help="Disable count constraints")
+    
     args = parser.parse_args()
 
     convert_split(
@@ -228,7 +276,31 @@ def main():
         attributes_json=args.attributes_json,
         output_path=args.output_json,
         max_samples=args.max_samples,
+        generate_constraints=not args.no_constraints,
+        max_presence=args.max_presence,
+        max_attribute=args.max_attribute,
+        max_relation=args.max_relation,
+        max_count=None if args.no_count else 1,
     )
+    
+    # Print constraint statistics if enabled
+    if not args.no_constraints:
+        with args.output_json.open("r") as f:
+            data = json.load(f)
+        
+        total_constraints = sum(len(e.get("constraints", [])) for e in data)
+        type_counts = {"presence": 0, "attribute": 0, "relation": 0, "count": 0}
+        for e in data:
+            for c in e.get("constraints", []):
+                ctype = c.get("type", "unknown")
+                if ctype in type_counts:
+                    type_counts[ctype] += 1
+        
+        print(f"\n=== Constraint Statistics ===")
+        print(f"Total constraints: {total_constraints}")
+        print(f"Average per image: {total_constraints / len(data):.1f}" if data else "N/A")
+        for ctype, count in type_counts.items():
+            print(f"  {ctype}: {count}")
 
 
 if __name__ == "__main__":
