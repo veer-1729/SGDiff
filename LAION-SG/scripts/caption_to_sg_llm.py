@@ -43,17 +43,37 @@ try:
 except ImportError:  # pragma: no cover - library may not be installed by default
     OpenAI = None  # type: ignore
 
-
 SYSTEM_PROMPT = """You are a model that converts image captions into structured scene graphs
-in the following JSON format (LAION-SG style):
+in the following JSON format (LAION-SG style), and you MUST think step by step
+before producing the final JSON.
+
+For each caption you receive, you should:
+1) First, reason in natural language about the scene: which objects are present,
+   what attributes they likely have, and how they relate spatially and functionally.
+2) Then output a JSON object with the following keys:
+   - "reasoning": a short paragraph (2-5 sentences) explaining what is in the scene
+                  and how you inferred the objects/relations from the caption. This is
+                  your chain-of-thought.
+   - "items": a list of objects with attributes (detailed but still grounded in the caption).
+   - "relations": a list of relations between objects (spatial, functional, or interaction).
+   - "constraints": OPTIONAL list of constraints of types: presence, attribute, relation, count.
+
+Example JSON schema:
 
 {
+  "reasoning": "The caption mentions a brown dog on a couch indoors. I identify 'dog' and 'couch' as main objects, ...",
   "items": [
     {
       "item_id": 0,
       "label": "dog",
       "attributes": ["brown"],
       "global_item_id": 0
+    },
+    {
+      "item_id": 1,
+      "label": "couch",
+      "attributes": ["red"],
+      "global_item_id": 1
     }
   ],
   "relations": [
@@ -72,15 +92,29 @@ in the following JSON format (LAION-SG style):
 }
 
 Rules:
-- Use a small, coherent set of object labels and attributes that match the caption.
+- ALWAYS include a "reasoning" string that explains your chain-of-thought.
+- Be **detailed and slightly creative** in attributes and relations:
+  - You may add plausible fine-grained attributes (colors, sizes, poses, materials)
+    that are strongly suggested or typical for the caption (e.g., sky → blue,
+    grass → green, road → gray), as long as you do NOT invent entirely new object
+    categories that are not mentioned or clearly implied.
+  - You may add natural spatial relations (e.g., "in front of", "behind", "next to")
+    when they are typical for the described scene.
+- Use a small, coherent set of object labels and attributes; prefer singular nouns
+  ("person", "dog", "car") for labels and simple adjectives for attributes.
 - Use integer item_id indices starting from 0.
 - relations[i].item1 and relations[i].item2 must refer to item_id values.
 - constraints is OPTIONAL, but when present it must only contain the 4 allowed types:
   presence, attribute, relation, count (with fields as in the example).
-- If the user provides an ExtraConstraints section, try to map each natural-language
-  constraint to one of these 4 types and add it to the constraints list. Ignore nonsense
-  or unsupported constraints.
-- ALWAYS return valid JSON with keys: "items", "relations", and optionally "constraints".
+- If the user provides an ExtraConstraints section, interpret each natural-language
+  constraint and, when possible, map it to exactly ONE of:
+    * presence: {"type": "presence", "object": "...", "polarity": "positive"|"negative"}
+    * attribute: {"type": "attribute", "object": "...", "attribute": "..."}
+    * relation: {"type": "relation", "subject": "...", "predicate": "...", "object": "..."}
+    * count: {"type": "count", "object": "...", "operator": ">=|<=|==", "value": N}
+  Ignore nonsense or unsupported constraints.
+- ALWAYS return a single valid JSON object with keys: "reasoning", "items", "relations",
+  and optionally "constraints".
 """
 
 
@@ -89,31 +123,47 @@ def build_few_shot_prompt(
     target_caption: str,
     extra_constraints_text: Optional[str] = None,
 ) -> str:
-    """Build a many-shot prompt from VG examples."""
-    parts: List[str] = [SYSTEM_PROMPT, "\nHere are some examples:\n"]
+    """Build a many-shot prompt from VG examples, now with CoT-style reasoning.
+
+    We show the model how to: (1) explain the scene in natural language, and
+    (2) map that explanation into the JSON schema. Examples use a generic
+    reasoning string; the model is free to adapt and be more specific.
+    """
+
+    parts: List[str] = ["Here are some examples of caption → reasoning → scene graph:\n"]
 
     for ex in examples:
         sg = {
+            "reasoning": (
+                "From this caption, I extract the main entities, their visual "
+                "attributes (colors, sizes, poses), and how they are spatially "
+                "and functionally related. I then assign item_ids, group attributes "
+                "with the correct labels, and create relations expressing the "
+                "layout and interactions."
+            ),
             "items": ex["items"],
             "relations": ex["relations"],
         }
         if "constraints" in ex:
             sg["constraints"] = ex["constraints"]
+
         parts.append(
             "Caption:\n"
             f"{ex['caption_ori']}\n"
-            "SceneGraph:\n"
+            "SceneGraphWithReasoning:\n"
             f"{json.dumps(sg, indent=2)}\n"
         )
 
-    parts.append("Now convert the following caption into a scene graph.\n")
+    # Target query
+    parts.append("Now convert the following caption into a detailed scene graph with reasoning.\n")
     parts.append(f"Caption:\n{target_caption}\n")
     if extra_constraints_text:
         parts.append("ExtraConstraints:\n")
         parts.append(extra_constraints_text.strip() + "\n")
-    parts.append("SceneGraph:\n")
+    parts.append("SceneGraphWithReasoning:\n")
 
     return "\n".join(parts)
+
 
 
 def call_llm(prompt: str, model: str = "gpt-4o-mini", temperature: float = 0.2) -> str:
