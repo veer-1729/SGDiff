@@ -1,29 +1,35 @@
 #!/usr/bin/env python3
 """
-Clean / rewrite BLIP captions using the scene graph as ground truth.
+Clean / rewrite BLIP captions using VG scene graphs BEFORE VG→LAION conversion.
 
-Input JSON (LAION-SG style, e.g. from convert_vg_to_laion.py):
-[
+Input:
+- VG HDF5 splits under --dataset_dir (e.g. datasets/vg/{train,val,test}.h5)
+- vocab.json with object / predicate vocab
+- captions.json created by caption_vg_subset.py:
   {
-    "name": "VG_100K/10.jpg",
-    "img_id": "vg_10",
-    "caption_ori": "...",          # raw BLIP caption
-    "items": [...],                # objects
-    "relations": [...],            # relations
-    "constraints": [...],          # optional
-  },
-  ...
-]
+    "captions": [
+      {"image_path": "VG_100K/10.jpg", "caption": "..."},
+      ...
+    ]
+  }
 
-Output JSON:
-- Same structure, but with an additional field "caption_clean" per entry.
+Output:
+- captions_clean.json with the SAME structure but cleaned captions:
+  {
+    "captions": [
+      {"image_path": "...", "caption": "<cleaned caption>"},
+      ...
+    ]
+  }
 
 Usage:
 
     export OPENAI_API_KEY=sk-...
     python clean_captions_with_sg.py \
-        --input_json vg_train_heuristic_200.json \
-        --output_json vg_train_clean_captions.json \
+        --dataset_dir datasets/vg \
+        --vocab_json datasets/vg/vocab.json \
+        --captions_in datasets/vg/captions.json \
+        --captions_out datasets/vg/captions_clean.json \
         --num_samples 100 \
         --model gpt-4o-mini
 """
@@ -32,7 +38,9 @@ import argparse
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
+
+import h5py
 
 try:
     from openai import OpenAI
@@ -64,36 +72,124 @@ Output rules:
 """
 
 
-def build_regional_descriptions(entry: Dict[str, Any]) -> List[str]:
-    """Heuristically build regional descriptions from items + relations."""
-    items = {it["item_id"]: it for it in entry.get("items", [])}
-    rels = entry.get("relations", [])
+def _decode_path(value) -> str:
+    if isinstance(value, bytes):
+        return value.decode("utf-8")
+    if hasattr(value, "tobytes"):
+        return value.tobytes().decode("utf-8")
+    return str(value)
 
+
+def build_sg_index(
+    dataset_dir: Path,
+    splits: List[str],
+    vocab_json: Path,
+) -> Dict[str, Dict[str, Any]]:
+    """
+    Build a mapping from image_path -> {items, relations} using VG HDF5 + vocab.
+
+    - items: [{"item_id", "label", "attributes": []}, ...]
+    - relations: [{"item1", "item2", "relation"}, ...]
+    """
+    if not vocab_json.exists():
+        raise FileNotFoundError(f"Missing vocab file: {vocab_json}")
+    vocab = json.loads(vocab_json.read_text())
+    obj_names = vocab["object_idx_to_name"]
+    pred_names = vocab["pred_idx_to_name"]
+
+    sg_index: Dict[str, Dict[str, Any]] = {}
+
+    for split in splits:
+        h5_path = dataset_dir / f"{split}.h5"
+        if not h5_path.exists():
+            continue
+        with h5py.File(h5_path, "r") as f:
+            image_paths = f["image_paths"][:]
+            object_names = f["object_names"][:]
+            objects_per_image = f["objects_per_image"][:]
+            rel_subjects = f["relationship_subjects"][:]
+            rel_objects = f["relationship_objects"][:]
+            rel_predicates = f["relationship_predicates"][:]
+            relationships_per_img = f["relationships_per_image"][:]
+
+            total = len(image_paths)
+            for idx in range(total):
+                rel_path = _decode_path(image_paths[idx])
+                if rel_path in sg_index:
+                    continue
+
+                num_obj = int(objects_per_image[idx])
+                num_rel = int(relationships_per_img[idx])
+                if num_obj <= 0:
+                    continue
+
+                items = []
+                slot_to_item = {}
+
+                # objects
+                for slot in range(num_obj):
+                    name_idx = int(object_names[idx, slot])
+                    if name_idx < 0 or name_idx >= len(obj_names):
+                        continue
+                    label = obj_names[name_idx]
+                    item = {
+                        "item_id": len(items),
+                        "label": label,
+                        "attributes": [],  # we ignore attrs here for simplicity
+                    }
+                    slot_to_item[slot] = item["item_id"]
+                    items.append(item)
+
+                if not items:
+                    continue
+
+                # relations
+                relations = []
+                for r in range(num_rel):
+                    sub_slot = int(rel_subjects[idx, r])
+                    obj_slot = int(rel_objects[idx, r])
+                    pred_idx = int(rel_predicates[idx, r])
+                    if (
+                        sub_slot not in slot_to_item
+                        or obj_slot not in slot_to_item
+                        or pred_idx < 0
+                        or pred_idx >= len(pred_names)
+                    ):
+                        continue
+                    relations.append(
+                        {
+                            "item1": slot_to_item[sub_slot],
+                            "item2": slot_to_item[obj_slot],
+                            "relation": pred_names[pred_idx],
+                        }
+                    )
+
+                sg_index[rel_path] = {
+                    "items": items,
+                    "relations": relations,
+                }
+
+    return sg_index
+
+
+def build_regional_descriptions(items: List[Dict[str, Any]], relations: List[Dict[str, Any]]) -> List[str]:
+    """Heuristically build regional descriptions from items + relations."""
+    items_map = {it["item_id"]: it for it in items}
     regions: List[str] = []
 
     def _obj_phrase(item_id: int) -> str:
-        it = items[item_id]
-        label = it["label"]
-        attrs = it.get("attributes", []) or []
-        attrs = attrs[:2]
-        if attrs:
-            return f"{', '.join(attrs)} {label}"
-        return label
+        it = items_map[item_id]
+        return it["label"]
 
-    for rel in rels:
+    for rel in relations:
         i1 = rel["item1"]
         i2 = rel["item2"]
-        if i1 not in items or i2 not in items:
+        if i1 not in items_map or i2 not in items_map:
             continue
         subj = _obj_phrase(i1)
         obj = _obj_phrase(i2)
         pred = rel["relation"]
-
-        if pred in {"on", "under", "behind", "in front of", "next to", "near", "in"}:
-            text = f"{subj} {pred} {obj}"
-        else:
-            text = f"{subj} {pred} {obj}"
-        regions.append(text)
+        regions.append(f"{subj} {pred} {obj}")
 
     seen = set()
     uniq_regions = []
@@ -104,12 +200,9 @@ def build_regional_descriptions(entry: Dict[str, Any]) -> List[str]:
     return uniq_regions
 
 
-def build_user_prompt(entry: Dict[str, Any]) -> str:
-    raw_caption = entry.get("caption_ori", "")
-    items = entry.get("items", [])
-
+def build_user_prompt(raw_caption: str, items: List[Dict[str, Any]], relations: List[Dict[str, Any]]) -> str:
     allowed_objects = sorted({it["label"] for it in items})
-    regions = build_regional_descriptions(entry)
+    regions = build_regional_descriptions(items, relations)
 
     parts: List[str] = []
     parts.append("RAW_CAPTION:")
@@ -155,13 +248,19 @@ def call_llm(prompt: str, model: str, temperature: float) -> str:
 
 
 def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="Clean BLIP captions using scene graphs.")
-    p.add_argument("--input_json", type=Path, required=True,
-                   help="Input LAION-style JSON with caption_ori/items/relations.")
-    p.add_argument("--output_json", type=Path, required=True,
-                   help="Output JSON with added caption_clean field.")
+    p = argparse.ArgumentParser(description="Clean BLIP captions using VG scene graphs (pre-conversion).")
+    p.add_argument("--dataset_dir", type=Path, default=Path("datasets/vg"),
+                   help="Directory containing {train,val,test}.h5")
+    p.add_argument("--splits", nargs="+", default=["train", "val", "test"],
+                   help="Splits to use for SG info.")
+    p.add_argument("--vocab_json", type=Path, default=Path("datasets/vg/vocab.json"),
+                   help="Path to VG vocab.json.")
+    p.add_argument("--captions_in", type=Path, default=Path("datasets/vg/captions.json"),
+                   help="Input BLIP captions.json.")
+    p.add_argument("--captions_out", type=Path, default=Path("datasets/vg/captions_clean.json"),
+                   help="Output cleaned captions.json.")
     p.add_argument("--num_samples", type=int, default=None,
-                   help="Limit number of entries to process (for debugging).")
+                   help="Limit number of captions to clean (for debugging).")
     p.add_argument("--model", type=str, default="gpt-4o-mini",
                    help="OpenAI model name.")
     p.add_argument("--temperature", type=float, default=0.3,
@@ -172,39 +271,47 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
 
-    data = json.loads(args.input_json.read_text())
+    # Build SG index: image_path -> {items, relations}
+    print("Building scene graph index from HDF5 + vocab...")
+    sg_index = build_sg_index(args.dataset_dir, args.splits, args.vocab_json)
+    print(f"SG index has {len(sg_index)} images.")
+
+    # Load captions.json
+    caps_data = json.loads(args.captions_in.read_text())
+    entries = caps_data.get("captions", [])
     if args.num_samples is not None:
-        data = data[: args.num_samples]
+        entries = entries[: args.num_samples]
 
-    cleaned: List[Dict[str, Any]] = []
+    cleaned_entries: List[Dict[str, str]] = []
 
-    for i, entry in enumerate(data):
-        caption = entry.get("caption_ori", "").strip()
-        if not caption:
-            cleaned.append(entry)
+    for i, entry in enumerate(entries):
+        rel_path = entry["image_path"]
+        raw_caption = entry["caption"]
+        sg = sg_index.get(rel_path)
+        if sg is None:
+            # No SG info; keep original caption
+            cleaned_entries.append(entry)
             continue
 
-        user_prompt = build_user_prompt(entry)
+        user_prompt = build_user_prompt(raw_caption, sg["items"], sg["relations"])
         try:
             new_caption = call_llm(user_prompt, model=args.model, temperature=args.temperature)
         except Exception as e:  # pragma: no cover
-            print(f"[WARN] LLM caption cleaning failed at index {i}: {e}")
-            cleaned.append(entry)
+            print(f"[WARN] LLM caption cleaning failed for {rel_path}: {e}")
+            cleaned_entries.append(entry)
             continue
 
-        entry = dict(entry)
-        entry["caption_clean"] = new_caption
-        cleaned.append(entry)
+        cleaned_entries.append({"image_path": rel_path, "caption": new_caption})
 
         if (i + 1) % 10 == 0:
             print(f"Processed {i + 1} captions...")
 
-    print(f"Saving {len(cleaned)} entries to {args.output_json} ...")
-    args.output_json.write_text(json.dumps(cleaned, indent=2))
-    print("Done.")
+    # Preserve structure: {"captions": [...]}
+    out_data = {"captions": cleaned_entries}
+    args.captions_out.parent.mkdir(parents=True, exist_ok=True)
+    args.captions_out.write_text(json.dumps(out_data, indent=2))
+    print(f"Saved {len(cleaned_entries)} cleaned captions to {args.captions_out}")
 
 
 if __name__ == "__main__":
     main()
-
-
