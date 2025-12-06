@@ -1,27 +1,84 @@
+"""
+Heuristic constraint extraction from caption + scene graph.
+
+This module provides functions to extract constraints that reflect what the
+caption explicitly mentions, making them suitable for training constraint-aware
+image generation models.
+"""
+
 import re
 from collections import Counter
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Set, Tuple
 
+# Cardinal numbers and fuzzy quantifiers
 NUMBER_WORDS = {
-    # explicit cardinal numbers
     "one": 1, "two": 2, "three": 3, "four": 4,
     "five": 5, "six": 6, "seven": 7, "eight": 8,
     "nine": 9, "ten": 10,
-    # fuzzy quantifiers we map to approximate counts
-    "couple": 2,
-    "pair": 2, "pairs": 2,
-    "few": 2,
-    "several": 3,
-    "many": 3,
-    "dozen": 12,
+    "couple": 2, "pair": 2, "pairs": 2,
+    "few": 2, "several": 3, "many": 3, "dozen": 12,
 }
+
+# Common spatial/action prepositions for relation mining
+RELATION_WORDS = {
+    # spatial
+    "on", "in", "at", "by", "near", "beside", "behind", "under", "above",
+    "below", "over", "inside", "outside", "between", "among", "through",
+    "across", "along", "around", "against", "towards", "toward",
+    # compound spatial (we'll match individual tokens)
+    "next", "front", "top", "bottom", "left", "right", "side",
+    # actions / positional verbs
+    "sitting", "standing", "lying", "walking", "running", "riding",
+    "holding", "wearing", "eating", "playing", "watching", "looking",
+    "facing", "leaning", "hanging", "flying", "parked", "placed",
+}
+
+# Common visual attributes (colors, materials, states) for caption mining
+COMMON_ATTRIBUTES = {
+    # colors
+    "red", "blue", "green", "yellow", "orange", "purple", "pink", "brown",
+    "black", "white", "gray", "grey", "gold", "silver", "beige", "tan",
+    # materials
+    "wooden", "wood", "metal", "glass", "plastic", "leather", "fabric",
+    "stone", "brick", "concrete", "ceramic",
+    # sizes
+    "big", "large", "small", "tiny", "tall", "short", "long", "wide", "narrow",
+    # states
+    "old", "new", "clean", "dirty", "wet", "dry", "open", "closed", "empty",
+    "full", "broken", "worn", "bright", "dark", "shiny", "dull",
+    # textures/patterns
+    "striped", "spotted", "plaid", "checkered", "floral", "plain",
+}
+
 
 def _normalize(text: str) -> str:
     return text.lower().strip()
 
+
 def _simple_tokenize(text: str) -> List[str]:
-    # very lightweight tokenizer
     return re.findall(r"\w+", text.lower())
+
+
+def _get_label_forms(label: str) -> Set[str]:
+    """Return singular and simple plural forms of a label."""
+    forms = {label}
+    if not label.endswith("s"):
+        forms.add(label + "s")
+    elif label.endswith("ss"):
+        forms.add(label + "es")  # glass -> glasses
+    else:
+        forms.add(label[:-1])  # dogs -> dog
+    # Handle -y plurals (e.g., puppy -> puppies, but this is approximate)
+    if label.endswith("y") and len(label) > 2 and label[-2] not in "aeiou":
+        forms.add(label[:-1] + "ies")
+    return forms
+
+
+def _find_label_positions(tokens: List[str], label: str) -> List[int]:
+    """Find all token indices where the label (or its plural) appears."""
+    forms = _get_label_forms(label)
+    return [i for i, tok in enumerate(tokens) if tok in forms]
+
 
 def generate_constraints_from_caption_and_sg(
     caption: str,
@@ -34,201 +91,247 @@ def generate_constraints_from_caption_and_sg(
     max_count: Optional[int] = None,
 ) -> List[Dict[str, Any]]:
     """
-    Heuristic constraint generator:
+    Extract constraints from caption + scene graph.
+    
+    This function uses multiple heuristics to find constraints that reflect
+    what the caption explicitly mentions:
+    
     - PRESENCE: objects whose label appears in caption
-    - ATTRIBUTE: attributes whose word appears in caption near/with that object
-    - RELATION: subject-predicate-object patterns that are clearly suggested by caption
-                (subject and object words near each other with predicate between/near them)
-    - COUNT: numeric mentions like 'two dogs', 'three trees', 'couple of people', 'many cars'
+    - ATTRIBUTE: 
+        1. SG attributes that appear in caption near/with that object
+        2. Common visual attributes mentioned in caption near an object
+    - RELATION:
+        1. SG relations where subj/obj/pred all appear in caption (loosely)
+        2. Caption-mined relations: pairs of objects with spatial words between
+    - COUNT: numeric/quantifier mentions followed by object labels
+    
+    Args:
+        caption: The image caption text
+        items: List of items from the scene graph
+        relations: List of relations from the scene graph
+        alias_map: Optional mapping for label normalization (e.g., "puppy" -> "dog")
+        max_presence: Max presence constraints to return
+        max_attribute: Max attribute constraints to return
+        max_relation: Max relation constraints to return
+        max_count: Max count constraints to return
+    
+    Returns:
+        List of constraint dicts with types: presence, attribute, relation, count
     """
     caption_norm = " " + _normalize(caption) + " "
     tokens = _simple_tokenize(caption)
-
-    # optional aliasing: "puppy" -> "dog", etc.
+    token_set = set(tokens)
+    
     alias_map = alias_map or {}
-
+    
     def canon_label(label: str) -> str:
         lab = _normalize(label)
         return alias_map.get(lab, lab)
-
-    # Map labels to items
+    
+    # Build label -> items mapping
     label_to_items: Dict[str, List[Dict[str, Any]]] = {}
     for it in items:
         lab = canon_label(it["label"])
         label_to_items.setdefault(lab, []).append(it)
-
+    
+    # Precompute label positions in tokens
+    label_positions: Dict[str, List[int]] = {}
+    labels_in_caption: Set[str] = set()
+    for lab in label_to_items.keys():
+        positions = _find_label_positions(tokens, lab)
+        label_positions[lab] = positions
+        if positions:
+            labels_in_caption.add(lab)
+    
     constraints: List[Dict[str, Any]] = []
-
+    seen_constraints: Set[Tuple] = set()  # for deduplication
+    
+    def _add_constraint(c: Dict[str, Any]) -> bool:
+        """Add constraint if not duplicate. Returns True if added."""
+        if c["type"] == "presence":
+            key = ("presence", c["object"], c["polarity"])
+        elif c["type"] == "attribute":
+            key = ("attribute", c["object"], c["attribute"])
+        elif c["type"] == "relation":
+            key = ("relation", c["subject"], c["predicate"], c["object"])
+        elif c["type"] == "count":
+            key = ("count", c["object"], c["operator"], c["value"])
+        else:
+            return False
+        
+        if key not in seen_constraints:
+            seen_constraints.add(key)
+            constraints.append(c)
+            return True
+        return False
+    
     # -------------------------
     # 1) PRESENCE constraints
     # -------------------------
-    presence_candidates = []
-    for lab in label_to_items.keys():
-        if f" {lab} " in caption_norm:
-            presence_candidates.append(lab)
-
-    if max_presence is not None:
-        presence_candidates = presence_candidates[:max_presence]
-
-    for lab in presence_candidates:
-        constraints.append({
-            "type": "presence",
-            "object": lab,
-            "polarity": "positive",
-        })
-
+    presence_count = 0
+    for lab in labels_in_caption:
+        if max_presence is not None and presence_count >= max_presence:
+            break
+        if _add_constraint({"type": "presence", "object": lab, "polarity": "positive"}):
+            presence_count += 1
+    
     # -------------------------
     # 2) ATTRIBUTE constraints
     # -------------------------
-    attr_constraints = []
+    attr_count = 0
+    
+    # 2a) From SG attributes that appear in caption
     for it in items:
+        if max_attribute is not None and attr_count >= max_attribute:
+            break
         lab = canon_label(it["label"])
+        if lab not in labels_in_caption:
+            continue
         for attr in it.get("attributes", []):
+            if max_attribute is not None and attr_count >= max_attribute:
+                break
             attr_norm = _normalize(attr)
-            # simple check: both words appear somewhere in caption
-            if f" {lab} " in caption_norm and f" {attr_norm} " in caption_norm:
-                attr_constraints.append({
-                    "type": "attribute",
-                    "object": lab,
-                    "attribute": attr_norm,
-                })
-
-    if max_attribute is not None:
-        attr_constraints = attr_constraints[:max_attribute]
-
-    constraints.extend(attr_constraints)
-
+            if attr_norm in token_set:
+                if _add_constraint({"type": "attribute", "object": lab, "attribute": attr_norm}):
+                    attr_count += 1
+    
+    # 2b) Caption-mined attributes: common visual attributes near object labels
+    for lab in labels_in_caption:
+        if max_attribute is not None and attr_count >= max_attribute:
+            break
+        lab_pos = label_positions[lab]
+        for pos in lab_pos:
+            if max_attribute is not None and attr_count >= max_attribute:
+                break
+            # Look in a window around the object mention
+            window_start = max(0, pos - 3)
+            window_end = min(len(tokens), pos + 2)
+            window_tokens = tokens[window_start:window_end]
+            for tok in window_tokens:
+                if tok in COMMON_ATTRIBUTES:
+                    if _add_constraint({"type": "attribute", "object": lab, "attribute": tok}):
+                        attr_count += 1
+    
     # -------------------------
-    # 3) RELATION constraints (looser, token-based matching)
+    # 3) RELATION constraints
     # -------------------------
-    # need item_id -> canonical label map
     id_to_label = {it["item_id"]: canon_label(it["label"]) for it in items}
-    rel_constraints: List[Dict[str, Any]] = []
-
-    # helper: positions of a label (singular/plural) in token list
-    def _label_positions(label: str) -> List[int]:
-        positions = []
-        # allow simple plural variants: dog / dogs
-        forms = {label}
-        if not label.endswith("s"):
-            forms.add(label + "s")
-        else:
-            # crude singularization: dogs -> dog
-            forms.add(label[:-1])
-        for i, tok in enumerate(tokens):
-            if tok in forms:
-                positions.append(i)
-        return positions
-
-    # build positions for each label once
-    label_pos_cache: Dict[str, List[int]] = {}
-
-    def _get_positions(label: str) -> List[int]:
-        if label not in label_pos_cache:
-            label_pos_cache[label] = _label_positions(label)
-        return label_pos_cache[label]
-
+    rel_count = 0
+    
+    # 3a) From SG relations that are supported by caption
     for rel in relations:
+        if max_relation is not None and rel_count >= max_relation:
+            break
         subj = id_to_label.get(rel["item1"])
         obj = id_to_label.get(rel["item2"])
         pred = _normalize(rel["relation"])
         if subj is None or obj is None:
             continue
-
-        subj_pos = _get_positions(subj)
-        obj_pos = _get_positions(obj)
+        
+        subj_pos = label_positions.get(subj, [])
+        obj_pos = label_positions.get(obj, [])
         if not subj_pos or not obj_pos:
             continue
-
-        # tokens that make up the predicate (e.g., "in front of" -> ["in","front","of"])
-        pred_tokens = _simple_tokenize(pred)
-        pred_set = set(pred_tokens)
-
-        # windowed proximity heuristic: subject and object appear within a small window,
-        # and at least one predicate token appears between or very near them.
+        
+        pred_tokens = set(_simple_tokenize(pred))
+        
+        # Check if subj and obj appear close together with pred nearby
+        max_span = 10
         found = False
-        max_span = 8  # max distance between subj and obj tokens
         for si in subj_pos:
             for oi in obj_pos:
                 if abs(si - oi) > max_span:
                     continue
-                lo, hi = sorted((si, oi))
-                # search region a bit beyond subject/object
+                lo, hi = min(si, oi), max(si, oi)
                 region_start = max(0, lo - 2)
                 region_end = min(len(tokens), hi + 3)
-                region = tokens[region_start:region_end]
-                if any(tok in pred_set for tok in region):
+                region = set(tokens[region_start:region_end])
+                if pred_tokens & region:
                     found = True
                     break
             if found:
                 break
-
+        
         if found:
-            rel_constraints.append({
-                "type": "relation",
-                "subject": subj,
-                "predicate": pred,
-                "object": obj,
-            })
-
-    if max_relation is not None:
-        rel_constraints = rel_constraints[:max_relation]
-
-    constraints.extend(rel_constraints)
-
+            if _add_constraint({"type": "relation", "subject": subj, "predicate": pred, "object": obj}):
+                rel_count += 1
+    
+    # 3b) Caption-mined relations: pairs of objects with spatial words between
+    # This catches relations mentioned in caption but not in SG
+    labels_list = list(labels_in_caption)
+    for i, lab1 in enumerate(labels_list):
+        if max_relation is not None and rel_count >= max_relation:
+            break
+        for lab2 in labels_list[i+1:]:
+            if max_relation is not None and rel_count >= max_relation:
+                break
+            if lab1 == lab2:
+                continue
+            
+            pos1_list = label_positions[lab1]
+            pos2_list = label_positions[lab2]
+            
+            for p1 in pos1_list:
+                if max_relation is not None and rel_count >= max_relation:
+                    break
+                for p2 in pos2_list:
+                    if abs(p1 - p2) > 8:
+                        continue
+                    
+                    lo, hi = min(p1, p2), max(p1, p2)
+                    between = tokens[lo:hi+1]
+                    
+                    # Find relation words between them
+                    found_rels = [t for t in between if t in RELATION_WORDS]
+                    if found_rels:
+                        # Use the first relation word found
+                        pred = found_rels[0]
+                        # Handle compound prepositions
+                        if pred == "next" and "to" in between:
+                            pred = "next to"
+                        elif pred == "front" and "of" in between:
+                            pred = "in front of"
+                        elif pred == "top" and "of" in between:
+                            pred = "on top of"
+                        
+                        # Determine direction (which is subject, which is object)
+                        if p1 < p2:
+                            subj, obj = lab1, lab2
+                        else:
+                            subj, obj = lab2, lab1
+                        
+                        if _add_constraint({"type": "relation", "subject": subj, "predicate": pred, "object": obj}):
+                            rel_count += 1
+                        break
+    
     # -------------------------
-    # 4) COUNT constraints (looser patterns)
+    # 4) COUNT constraints
     # -------------------------
-    # We now look for number/quantifier tokens followed within a small window by an object label.
-    count_constraints: List[Dict[str, Any]] = []
-
-    def _add_count_constraint(obj_label: str, value: int):
-        count_constraints.append({
-            "type": "count",
-            "object": obj_label,
-            "operator": ">=",
-            "value": value,
-        })
-
-    # precompute label forms for quick matching
-    label_forms: Dict[str, List[str]] = {}
-    for lab in label_to_items.keys():
-        forms = [lab]
-        if not lab.endswith("s"):
-            forms.append(lab + "s")
-        else:
-            forms.append(lab[:-1])
-        label_forms[lab] = forms
-
-    # scan tokens with a small look-ahead window
+    count_count = 0
+    
+    # Build label forms for matching
+    label_forms_map: Dict[str, Set[str]] = {
+        lab: _get_label_forms(lab) for lab in label_to_items.keys()
+    }
+    
     window = 4
     for i, tok in enumerate(tokens):
-        # numeric word or fuzzy quantifier
+        if max_count is not None and count_count >= max_count:
+            break
+        
+        # Check if token is a number
         if tok in NUMBER_WORDS:
             num = NUMBER_WORDS[tok]
         elif tok.isdigit():
             num = int(tok)
         else:
             continue
-
-        # look ahead a few tokens for any object label
+        
+        # Look ahead for object labels
         lookahead = tokens[i + 1 : i + 1 + window]
-        for lab, forms in label_forms.items():
+        for lab, forms in label_forms_map.items():
             if any(t in forms for t in lookahead):
-                _add_count_constraint(lab, num)
-
-    # dedup count constraints by (object, operator, value)
-    seen = set()
-    dedup_counts: List[Dict[str, Any]] = []
-    for c in count_constraints:
-        key = (c["object"], c["operator"], c["value"])
-        if key not in seen:
-            seen.add(key)
-            dedup_counts.append(c)
-
-    if max_count is not None:
-        dedup_counts = dedup_counts[:max_count]
-
-    constraints.extend(dedup_counts)
-
+                if _add_constraint({"type": "count", "object": lab, "operator": ">=", "value": num}):
+                    count_count += 1
+    
     return constraints
