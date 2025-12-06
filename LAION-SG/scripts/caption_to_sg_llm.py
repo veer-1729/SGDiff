@@ -101,6 +101,10 @@ Rules for items and relations:
 - attributes is a list of short adjectives (colors, sizes, materials, states).
 - item_id are integers starting from 0; global_item_id can equal item_id.
 - relations[i].item1 and relations[i].item2 must refer to item_id values.
+- If your reasoning or constraints indicate there are MULTIPLE instances of an
+  object (e.g., "several desks", "two computers"), you SHOULD create multiple
+  items with the same label but different item_id values (0,1,2,...) instead of
+  representing all of them by a single item.
 
 Rules for constraints:
 - constraints is OPTIONAL, but when present must use the schemas above.
