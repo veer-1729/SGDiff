@@ -57,7 +57,7 @@ You will receive:
   of the image in terms of those objects and their relations.
 
 Your task:
-- Produce a SINGLE, global caption that enhances RAW_CAPTION:
+- Produce a SINGLE, global caption that:
   - Only mentions objects from ALLOWED_OBJECTS (no new object categories).
   - Is consistent with REGIONAL_DESCRIPTIONS as much as possible.
   - Is natural, fluent English, and works as a good image generation prompt.
