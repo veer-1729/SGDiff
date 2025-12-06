@@ -1,0 +1,2375 @@
+[
+    {
+      "name": "VG_100K_2/1.jpg",
+      "img_id": "vg_1",
+      "caption_ori": "Two men are standing on the sidewalk, talking to each other, with a tree providing shade nearby and a building with a sign in the background. A car and a van are parked on the street next to them.",
+      "items": [
+        {
+          "item_id": 0,
+          "label": "tree",
+          "attributes": [],
+          "global_item_id": 1058549
+        },
+        {
+          "item_id": 1,
+          "label": "sidewalk",
+          "attributes": [
+            "brick"
+          ],
+          "global_item_id": 1058534
+        },
+        {
+          "item_id": 2,
+          "label": "building",
+          "attributes": [
+            "tall",
+            "brick"
+          ],
+          "global_item_id": 1058508
+        },
+        {
+          "item_id": 3,
+          "label": "street",
+          "attributes": [
+            "clean"
+          ],
+          "global_item_id": 1058539
+        },
+        {
+          "item_id": 4,
+          "label": "wall",
+          "attributes": [
+            "grey"
+          ],
+          "global_item_id": 1058543
+        },
+        {
+          "item_id": 5,
+          "label": "tree",
+          "attributes": [],
+          "global_item_id": 1058545
+        },
+        {
+          "item_id": 6,
+          "label": "shade",
+          "attributes": [],
+          "global_item_id": 5045
+        },
+        {
+          "item_id": 7,
+          "label": "van",
+          "attributes": [
+            "parked",
+            "white"
+          ],
+          "global_item_id": 1058542
+        },
+        {
+          "item_id": 8,
+          "label": "window",
+          "attributes": [],
+          "global_item_id": 3798579
+        },
+        {
+          "item_id": 9,
+          "label": "man",
+          "attributes": [],
+          "global_item_id": 3798576
+        },
+        {
+          "item_id": 10,
+          "label": "man",
+          "attributes": [],
+          "global_item_id": 3798577
+        },
+        {
+          "item_id": 11,
+          "label": "sign",
+          "attributes": [
+            "black"
+          ],
+          "global_item_id": 1058507
+        },
+        {
+          "item_id": 12,
+          "label": "car",
+          "attributes": [
+            "white",
+            "parked"
+          ],
+          "global_item_id": 1058515
+        },
+        {
+          "item_id": 13,
+          "label": "back",
+          "attributes": [],
+          "global_item_id": 5060
+        },
+        {
+          "item_id": 14,
+          "label": "jacket",
+          "attributes": [
+            "gray",
+            "grey"
+          ],
+          "global_item_id": 1058530
+        },
+        {
+          "item_id": 15,
+          "label": "car",
+          "attributes": [],
+          "global_item_id": 5049
+        },
+        {
+          "item_id": 16,
+          "label": "pant",
+          "attributes": [
+            "gray",
+            "grey"
+          ],
+          "global_item_id": 1058531
+        },
+        {
+          "item_id": 17,
+          "label": "shirt",
+          "attributes": [
+            "red",
+            "orange"
+          ],
+          "global_item_id": 1058511
+        },
+        {
+          "item_id": 18,
+          "label": "pant",
+          "attributes": [
+            "black"
+          ],
+          "global_item_id": 1058528
+        },
+        {
+          "item_id": 19,
+          "label": "shirt",
+          "attributes": [
+            "grey"
+          ],
+          "global_item_id": 1058547
+        }
+      ],
+      "relations": [
+        {
+          "item1": 6,
+          "item2": 1,
+          "relation": "on"
+        },
+        {
+          "item1": 11,
+          "item2": 2,
+          "relation": "on"
+        },
+        {
+          "item1": 1,
+          "item2": 3,
+          "relation": "next to"
+        },
+        {
+          "item1": 12,
+          "item2": 13,
+          "relation": "has"
+        },
+        {
+          "item1": 7,
+          "item2": 3,
+          "relation": "parked on"
+        },
+        {
+          "item1": 12,
+          "item2": 3,
+          "relation": "parked on"
+        },
+        {
+          "item1": 5,
+          "item2": 3,
+          "relation": "next to"
+        },
+        {
+          "item1": 0,
+          "item2": 1,
+          "relation": "by"
+        },
+        {
+          "item1": 2,
+          "item2": 8,
+          "relation": "with"
+        }
+      ],
+      "global_ids": [
+        {
+          "item1": 5045,
+          "item2": 1058534
+        },
+        {
+          "item1": 1058507,
+          "item2": 1058508
+        },
+        {
+          "item1": 1058534,
+          "item2": 1058539
+        },
+        {
+          "item1": 1058515,
+          "item2": 5060
+        },
+        {
+          "item1": 1058542,
+          "item2": 1058539
+        },
+        {
+          "item1": 1058515,
+          "item2": 1058539
+        },
+        {
+          "item1": 1058545,
+          "item2": 1058539
+        },
+        {
+          "item1": 1058549,
+          "item2": 1058534
+        },
+        {
+          "item1": 1058508,
+          "item2": 3798579
+        }
+      ],
+      "constraints": [
+        {
+          "type": "presence",
+          "object": "tree",
+          "polarity": "positive"
+        },
+        {
+          "type": "presence",
+          "object": "car",
+          "polarity": "positive"
+        },
+        {
+          "type": "attribute",
+          "object": "van",
+          "attribute": "parked"
+        },
+        {
+          "type": "attribute",
+          "object": "car",
+          "attribute": "parked"
+        },
+        {
+          "type": "relation",
+          "subject": "shade",
+          "predicate": "on",
+          "object": "sidewalk"
+        }
+      ],
+      "reasoning": {
+            "explicit_objects": [
+            "man", "sidewalk", "tree", "shade", "building",
+            "sign", "car", "van", "street"
+            ],
+            "implied_objects": [
+            "wall", "window", "jacket", "pants", "shirt"
+            ],
+            "attributes": [
+            { "object": "man", "attribute": "standing" },
+            { "object": "car", "attribute": "parked" },
+            { "object": "van", "attribute": "parked" },
+            { "object": "tree", "attribute": "providing shade" }
+            ],
+            "relations": [
+            { "subject": "man", "predicate": "on", "object": "sidewalk" },
+            { "subject": "tree", "predicate": "near", "object": "men" },
+            { "subject": "car", "predicate": "next to", "object": "van" },
+            { "subject": "building", "predicate": "in background of", "object": "scene" }
+            ]
+        }
+    },
+    {
+      "name": "VG_100K/2.jpg",
+      "img_id": "vg_2",
+      "caption_ori": "A man is crossing the road in front of a red car parked on the side, with a tree alongside the road and a bike next to the car.",
+      "items": [
+        {
+          "item_id": 0,
+          "label": "road",
+          "attributes": [
+            "grey"
+          ],
+          "global_item_id": 1023841
+        },
+        {
+          "item_id": 1,
+          "label": "sidewalk",
+          "attributes": [
+            "brick",
+            "white"
+          ],
+          "global_item_id": 1023813
+        },
+        {
+          "item_id": 2,
+          "label": "building",
+          "attributes": [
+            "orange",
+            "brown",
+            "tall"
+          ],
+          "global_item_id": 1023819
+        },
+        {
+          "item_id": 3,
+          "label": "building",
+          "attributes": [
+            "brown",
+            "red"
+          ],
+          "global_item_id": 1023846
+        },
+        {
+          "item_id": 4,
+          "label": "man",
+          "attributes": [
+            "walking",
+            "white"
+          ],
+          "global_item_id": 1023838
+        },
+        {
+          "item_id": 5,
+          "label": "pole",
+          "attributes": [
+            "brown"
+          ],
+          "global_item_id": 1023847
+        },
+        {
+          "item_id": 6,
+          "label": "window",
+          "attributes": [
+            "glass"
+          ],
+          "global_item_id": 5080
+        },
+        {
+          "item_id": 7,
+          "label": "car",
+          "attributes": [
+            "red",
+            "parked"
+          ],
+          "global_item_id": 1023836
+        },
+        {
+          "item_id": 8,
+          "label": "tree",
+          "attributes": [
+            "green"
+          ],
+          "global_item_id": 5074
+        },
+        {
+          "item_id": 9,
+          "label": "tree",
+          "attributes": [
+            "green"
+          ],
+          "global_item_id": 5076
+        },
+        {
+          "item_id": 10,
+          "label": "tree",
+          "attributes": [
+            "green"
+          ],
+          "global_item_id": 5075
+        },
+        {
+          "item_id": 11,
+          "label": "window",
+          "attributes": [
+            "glass"
+          ],
+          "global_item_id": 5082
+        },
+        {
+          "item_id": 12,
+          "label": "window",
+          "attributes": [
+            "glass"
+          ],
+          "global_item_id": 5081
+        },
+        {
+          "item_id": 13,
+          "label": "car",
+          "attributes": [
+            "white"
+          ],
+          "global_item_id": 5085
+        },
+        {
+          "item_id": 14,
+          "label": "window",
+          "attributes": [
+            "glass"
+          ],
+          "global_item_id": 5083
+        },
+        {
+          "item_id": 15,
+          "label": "bike",
+          "attributes": [],
+          "global_item_id": 5089
+        }
+      ],
+      "relations": [
+        {
+          "item1": 7,
+          "item2": 0,
+          "relation": "parked on"
+        },
+        {
+          "item1": 8,
+          "item2": 0,
+          "relation": "next to"
+        },
+        {
+          "item1": 10,
+          "item2": 0,
+          "relation": "next to"
+        },
+        {
+          "item1": 9,
+          "item2": 0,
+          "relation": "next to"
+        },
+        {
+          "item1": 2,
+          "item2": 6,
+          "relation": "has"
+        },
+        {
+          "item1": 2,
+          "item2": 12,
+          "relation": "has"
+        },
+        {
+          "item1": 2,
+          "item2": 11,
+          "relation": "has"
+        },
+        {
+          "item1": 2,
+          "item2": 14,
+          "relation": "has"
+        },
+        {
+          "item1": 13,
+          "item2": 0,
+          "relation": "parked on"
+        },
+        {
+          "item1": 8,
+          "item2": 0,
+          "relation": "along"
+        },
+        {
+          "item1": 10,
+          "item2": 0,
+          "relation": "along"
+        },
+        {
+          "item1": 9,
+          "item2": 0,
+          "relation": "along"
+        },
+        {
+          "item1": 15,
+          "item2": 7,
+          "relation": "next to"
+        },
+        {
+          "item1": 7,
+          "item2": 0,
+          "relation": "parked on"
+        }
+      ],
+      "global_ids": [
+        {
+          "item1": 1023836,
+          "item2": 1023841
+        },
+        {
+          "item1": 5074,
+          "item2": 1023841
+        },
+        {
+          "item1": 5075,
+          "item2": 1023841
+        },
+        {
+          "item1": 5076,
+          "item2": 1023841
+        },
+        {
+          "item1": 1023819,
+          "item2": 5080
+        },
+        {
+          "item1": 1023819,
+          "item2": 5081
+        },
+        {
+          "item1": 1023819,
+          "item2": 5082
+        },
+        {
+          "item1": 1023819,
+          "item2": 5083
+        },
+        {
+          "item1": 5085,
+          "item2": 1023841
+        },
+        {
+          "item1": 5074,
+          "item2": 1023841
+        },
+        {
+          "item1": 5075,
+          "item2": 1023841
+        },
+        {
+          "item1": 5076,
+          "item2": 1023841
+        },
+        {
+          "item1": 5089,
+          "item2": 1023836
+        },
+        {
+          "item1": 1023836,
+          "item2": 1023841
+        }
+      ],
+      "constraints": [
+        {
+          "type": "presence",
+          "object": "tree",
+          "polarity": "positive"
+        },
+        {
+          "type": "presence",
+          "object": "car",
+          "polarity": "positive"
+        },
+        {
+          "type": "attribute",
+          "object": "car",
+          "attribute": "red"
+        },
+        {
+          "type": "attribute",
+          "object": "car",
+          "attribute": "parked"
+        },
+        {
+          "type": "relation",
+          "subject": "car",
+          "predicate": "parked on",
+          "object": "road"
+        }
+      ],
+      "reasoning": {
+        "explicit_objects": [
+        "man", "road", "car", "tree", "bike"
+        ],
+        "implied_objects": [
+        "sidewalk", "building", "window", "pole"
+        ],
+        "attributes": [
+        { "object": "man", "attribute": "crossing" },
+        { "object": "car", "attribute": "red" },
+        { "object": "car", "attribute": "parked" },
+        { "object": "tree", "attribute": "alongside road" }
+        ],
+        "relations": [
+        { "subject": "man", "predicate": "in front of", "object": "car" },
+        { "subject": "car", "predicate": "parked on", "object": "side of road" },
+        { "subject": "bike", "predicate": "next to", "object": "car" }
+        ]
+    }
+    },
+    {
+      "name": "VG_100K/3.jpg",
+      "img_id": "vg_3",
+      "caption_ori": "A girl with hair is sitting at a desk in front of a computer, with a keyboard in front of the monitor, a telephone on the desk, and a bag resting on the surface. A cable is on the floor, and a picture is hanging on the wall.",
+      "items": [
+        {
+          "item_id": 0,
+          "label": "table",
+          "attributes": [
+            "white"
+          ],
+          "global_item_id": 1060248
+        },
+        {
+          "item_id": 1,
+          "label": "desk",
+          "attributes": [],
+          "global_item_id": 1060282
+        },
+        {
+          "item_id": 2,
+          "label": "wall",
+          "attributes": [],
+          "global_item_id": 1060274
+        },
+        {
+          "item_id": 3,
+          "label": "floor",
+          "attributes": [],
+          "global_item_id": 5118
+        },
+        {
+          "item_id": 4,
+          "label": "monitor",
+          "attributes": [
+            "white"
+          ],
+          "global_item_id": 1060246
+        },
+        {
+          "item_id": 5,
+          "label": "wall",
+          "attributes": [],
+          "global_item_id": 1060287
+        },
+        {
+          "item_id": 6,
+          "label": "photo",
+          "attributes": [],
+          "global_item_id": 1060296
+        },
+        {
+          "item_id": 7,
+          "label": "girl",
+          "attributes": [
+            "sitting"
+          ],
+          "global_item_id": 1060269
+        },
+        {
+          "item_id": 8,
+          "label": "picture",
+          "attributes": [],
+          "global_item_id": 1060294
+        },
+        {
+          "item_id": 9,
+          "label": "bag",
+          "attributes": [
+            "black"
+          ],
+          "global_item_id": 1060252
+        },
+        {
+          "item_id": 10,
+          "label": "keyboard",
+          "attributes": [
+            "white"
+          ],
+          "global_item_id": 1060286
+        },
+        {
+          "item_id": 11,
+          "label": "telephone",
+          "attributes": [
+            "black"
+          ],
+          "global_item_id": 1060242
+        },
+        {
+          "item_id": 12,
+          "label": "cable",
+          "attributes": [],
+          "global_item_id": 1060295
+        },
+        {
+          "item_id": 13,
+          "label": "hair",
+          "attributes": [
+            "long"
+          ],
+          "global_item_id": 5114
+        },
+        {
+          "item_id": 14,
+          "label": "computer",
+          "attributes": [],
+          "global_item_id": 1060293
+        },
+        {
+          "item_id": 15,
+          "label": "drawer",
+          "attributes": [],
+          "global_item_id": 5099
+        },
+        {
+          "item_id": 16,
+          "label": "handle",
+          "attributes": [],
+          "global_item_id": 1060298
+        },
+        {
+          "item_id": 17,
+          "label": "cable",
+          "attributes": [],
+          "global_item_id": 5119
+        },
+        {
+          "item_id": 18,
+          "label": "desk",
+          "attributes": [],
+          "global_item_id": 1060301
+        },
+        {
+          "item_id": 19,
+          "label": "picture",
+          "attributes": [],
+          "global_item_id": 1060292
+        }
+      ],
+      "relations": [
+        {
+          "item1": 10,
+          "item2": 4,
+          "relation": "in front of"
+        },
+        {
+          "item1": 11,
+          "item2": 1,
+          "relation": "on"
+        },
+        {
+          "item1": 7,
+          "item2": 14,
+          "relation": "in front of"
+        },
+        {
+          "item1": 7,
+          "item2": 13,
+          "relation": "has"
+        },
+        {
+          "item1": 17,
+          "item2": 3,
+          "relation": "on"
+        },
+        {
+          "item1": 9,
+          "item2": 1,
+          "relation": "on"
+        },
+        {
+          "item1": 14,
+          "item2": 5,
+          "relation": "on"
+        },
+        {
+          "item1": 7,
+          "item2": 13,
+          "relation": "has"
+        },
+        {
+          "item1": 7,
+          "item2": 13,
+          "relation": "with"
+        },
+        {
+          "item1": 19,
+          "item2": 2,
+          "relation": "on"
+        },
+        {
+          "item1": 11,
+          "item2": 1,
+          "relation": "on"
+        },
+        {
+          "item1": 7,
+          "item2": 13,
+          "relation": "with"
+        },
+        {
+          "item1": 10,
+          "item2": 10,
+          "relation": "with"
+        },
+        {
+          "item1": 11,
+          "item2": 0,
+          "relation": "on"
+        }
+      ],
+      "global_ids": [
+        {
+          "item1": 1060286,
+          "item2": 1060246
+        },
+        {
+          "item1": 1060242,
+          "item2": 1060282
+        },
+        {
+          "item1": 1060269,
+          "item2": 1060293
+        },
+        {
+          "item1": 1060269,
+          "item2": 5114
+        },
+        {
+          "item1": 5119,
+          "item2": 5118
+        },
+        {
+          "item1": 1060252,
+          "item2": 1060282
+        },
+        {
+          "item1": 1060293,
+          "item2": 1060287
+        },
+        {
+          "item1": 1060269,
+          "item2": 5114
+        },
+        {
+          "item1": 1060269,
+          "item2": 5114
+        },
+        {
+          "item1": 1060292,
+          "item2": 1060274
+        },
+        {
+          "item1": 1060242,
+          "item2": 1060282
+        },
+        {
+          "item1": 1060269,
+          "item2": 5114
+        },
+        {
+          "item1": 1060286,
+          "item2": 1060286
+        },
+        {
+          "item1": 1060242,
+          "item2": 1060248
+        }
+      ],
+      "constraints": [
+        {
+          "type": "presence",
+          "object": "picture",
+          "polarity": "positive"
+        },
+        {
+          "type": "presence",
+          "object": "telephone",
+          "polarity": "positive"
+        },
+        {
+          "type": "attribute",
+          "object": "girl",
+          "attribute": "sitting"
+        },
+        {
+          "type": "relation",
+          "subject": "keyboard",
+          "predicate": "in front of",
+          "object": "monitor"
+        }
+      ],
+      "reasoning": {
+            "explicit_objects": [
+            "girl", "hair", "desk", "computer", "keyboard",
+            "telephone", "bag", "cable", "floor", "picture", "wall", "monitor"
+            ],
+            "implied_objects": [
+             "chair", "drawer", "table"
+            ],
+            "attributes": [
+            { "object": "girl", "attribute": "sitting" },
+            { "object": "hair", "attribute": "long" },
+            { "object": "computer", "attribute": "on desk" },
+            { "object": "keyboard", "attribute": "in front of monitor" },
+            { "object": "bag", "attribute": "resting" }
+            ],
+            "relations": [
+            { "subject": "keyboard", "predicate": "in front of", "object": "monitor" },
+            { "subject": "telephone", "predicate": "on", "object": "desk" },
+            { "subject": "bag", "predicate": "on", "object": "desk" },
+            { "subject": "picture", "predicate": "on", "object": "wall" }
+            ]
+        }
+    },
+    {
+      "name": "VG_100K/4.jpg",
+      "img_id": "vg_4",
+      "caption_ori": "A purple couch with a frame is positioned in a living room, adorned with a pillow, next to a window, while a carpet covers the floor and a lamp stands behind the couch. A chair is placed next to a table in the room.",
+      "items": [
+        {
+          "item_id": 0,
+          "label": "floor",
+          "attributes": [
+            "wood",
+            "wooden"
+          ],
+          "global_item_id": 1060307
+        },
+        {
+          "item_id": 1,
+          "label": "carpet",
+          "attributes": [
+            "gray",
+            "clean",
+            "purple",
+            "grey"
+          ],
+          "global_item_id": 1060306
+        },
+        {
+          "item_id": 2,
+          "label": "curtain",
+          "attributes": [
+            "blue"
+          ],
+          "global_item_id": 1060302
+        },
+        {
+          "item_id": 3,
+          "label": "window",
+          "attributes": [],
+          "global_item_id": 5132
+        },
+        {
+          "item_id": 4,
+          "label": "table",
+          "attributes": [
+            "glass",
+            "metal"
+          ],
+          "global_item_id": 1060324
+        },
+        {
+          "item_id": 5,
+          "label": "couch",
+          "attributes": [
+            "purple",
+            "wooden"
+          ],
+          "global_item_id": 1060310
+        },
+        {
+          "item_id": 6,
+          "label": "door",
+          "attributes": [
+            "glass"
+          ],
+          "global_item_id": 5135
+        },
+        {
+          "item_id": 7,
+          "label": "frame",
+          "attributes": [
+            "wooden"
+          ],
+          "global_item_id": 1060322
+        },
+        {
+          "item_id": 8,
+          "label": "chair",
+          "attributes": [
+            "black",
+            "purple",
+            "blue"
+          ],
+          "global_item_id": 1060303
+        },
+        {
+          "item_id": 9,
+          "label": "picture",
+          "attributes": [
+            "black"
+          ],
+          "global_item_id": 1060336
+        },
+        {
+          "item_id": 10,
+          "label": "pillow",
+          "attributes": [
+            "white"
+          ],
+          "global_item_id": 1060318
+        },
+        {
+          "item_id": 11,
+          "label": "desk",
+          "attributes": [
+            "wooden"
+          ],
+          "global_item_id": 1060308
+        },
+        {
+          "item_id": 12,
+          "label": "lamp",
+          "attributes": [
+            "tall",
+            "black",
+            "standing"
+          ],
+          "global_item_id": 1060337
+        }
+      ],
+      "relations": [
+        {
+          "item1": 1,
+          "item2": 0,
+          "relation": "on"
+        },
+        {
+          "item1": 10,
+          "item2": 5,
+          "relation": "on"
+        },
+        {
+          "item1": 5,
+          "item2": 7,
+          "relation": "has"
+        },
+        {
+          "item1": 8,
+          "item2": 4,
+          "relation": "next to"
+        },
+        {
+          "item1": 12,
+          "item2": 5,
+          "relation": "behind"
+        },
+        {
+          "item1": 10,
+          "item2": 5,
+          "relation": "on"
+        },
+        {
+          "item1": 12,
+          "item2": 0,
+          "relation": "on"
+        }
+      ],
+      "global_ids": [
+        {
+          "item1": 1060306,
+          "item2": 1060307
+        },
+        {
+          "item1": 1060318,
+          "item2": 1060310
+        },
+        {
+          "item1": 1060310,
+          "item2": 1060322
+        },
+        {
+          "item1": 1060303,
+          "item2": 1060324
+        },
+        {
+          "item1": 1060337,
+          "item2": 1060310
+        },
+        {
+          "item1": 1060318,
+          "item2": 1060310
+        },
+        {
+          "item1": 1060337,
+          "item2": 1060307
+        }
+      ],
+      "constraints": [
+        {
+          "type": "presence",
+          "object": "table",
+          "polarity": "positive"
+        },
+        {
+          "type": "presence",
+          "object": "lamp",
+          "polarity": "positive"
+        },
+        {
+          "type": "attribute",
+          "object": "carpet",
+          "attribute": "purple"
+        },
+        {
+          "type": "attribute",
+          "object": "couch",
+          "attribute": "purple"
+        },
+        {
+          "type": "relation",
+          "subject": "chair",
+          "predicate": "next to",
+          "object": "table"
+        }
+      ],
+      "reasoning": {
+        "explicit_objects": ["couch", "frame", "pillow", "window", "carpet", "floor", "chair", "table", "lamp"],
+        "implied_objects": ["curtain", "door"],
+        "attributes": [
+            {"object": "couch", "attribute": "purple"},
+            {"object": "carpet", "attribute": "purple"},
+            {"object": "floor", "attribute": "wooden"},
+            {"object": "lamp", "attribute": "tall"},
+            {"object": "chair", "attribute": "black"}
+        ],
+        "relations": [
+            {"subject": "pillow", "predicate": "on", "object": "couch"},
+            {"subject": "chair", "predicate": "next to", "object": "table"},
+            {"subject": "lamp", "predicate": "behind", "object": "couch"},
+            {"subject": "carpet", "predicate": "on", "object": "floor"}
+        ]
+    }
+
+    },
+    {
+      "name": "VG_100K/5.jpg",
+      "img_id": "vg_5",
+      "caption_ori": "In a room, there is a desk with a computer monitor on it, a chair positioned near the desk, and a cable lying on the floor. A shelf is mounted on the wall, and the chair is also against the wall.",
+      "items": [
+        {
+          "item_id": 0,
+          "label": "room",
+          "attributes": [],
+          "global_item_id": 1060375
+        },
+        {
+          "item_id": 1,
+          "label": "wall",
+          "attributes": [
+            "white",
+            "cream"
+          ],
+          "global_item_id": 1060360
+        },
+        {
+          "item_id": 2,
+          "label": "wall",
+          "attributes": [
+            "white"
+          ],
+          "global_item_id": 1060374
+        },
+        {
+          "item_id": 3,
+          "label": "shelf",
+          "attributes": [],
+          "global_item_id": 3798574
+        },
+        {
+          "item_id": 4,
+          "label": "chair",
+          "attributes": [
+            "brown",
+            "wood"
+          ],
+          "global_item_id": 1060348
+        },
+        {
+          "item_id": 5,
+          "label": "chair",
+          "attributes": [
+            "wood"
+          ],
+          "global_item_id": 1060371
+        },
+        {
+          "item_id": 6,
+          "label": "shelf",
+          "attributes": [
+            "brown"
+          ],
+          "global_item_id": 1060364
+        },
+        {
+          "item_id": 7,
+          "label": "floor",
+          "attributes": [
+            "wooden",
+            "wood",
+            "brown"
+          ],
+          "global_item_id": 1060359
+        },
+        {
+          "item_id": 8,
+          "label": "window",
+          "attributes": [],
+          "global_item_id": 1060366
+        },
+        {
+          "item_id": 9,
+          "label": "desk",
+          "attributes": [
+            "brown"
+          ],
+          "global_item_id": 1060368
+        },
+        {
+          "item_id": 10,
+          "label": "door",
+          "attributes": [
+            "white"
+          ],
+          "global_item_id": 1060354
+        },
+        {
+          "item_id": 11,
+          "label": "computer monitor",
+          "attributes": [
+            "off",
+            "grey"
+          ],
+          "global_item_id": 1060350
+        },
+        {
+          "item_id": 12,
+          "label": "railing",
+          "attributes": [],
+          "global_item_id": 1060365
+        },
+        {
+          "item_id": 13,
+          "label": "computer",
+          "attributes": [],
+          "global_item_id": 1060351
+        },
+        {
+          "item_id": 14,
+          "label": "window",
+          "attributes": [
+            "square"
+          ],
+          "global_item_id": 1060372
+        },
+        {
+          "item_id": 15,
+          "label": "light",
+          "attributes": [
+            "on"
+          ],
+          "global_item_id": 1060344
+        },
+        {
+          "item_id": 16,
+          "label": "cable",
+          "attributes": [
+            "white"
+          ],
+          "global_item_id": 5142
+        },
+        {
+          "item_id": 17,
+          "label": "paper",
+          "attributes": [],
+          "global_item_id": 1060373
+        }
+      ],
+      "relations": [
+        {
+          "item1": 16,
+          "item2": 7,
+          "relation": "on"
+        },
+        {
+          "item1": 13,
+          "item2": 7,
+          "relation": "on"
+        },
+        {
+          "item1": 16,
+          "item2": 7,
+          "relation": "on"
+        },
+        {
+          "item1": 4,
+          "item2": 9,
+          "relation": "near"
+        },
+        {
+          "item1": 11,
+          "item2": 9,
+          "relation": "on"
+        },
+        {
+          "item1": 11,
+          "item2": 9,
+          "relation": "on"
+        },
+        {
+          "item1": 6,
+          "item2": 1,
+          "relation": "on"
+        },
+        {
+          "item1": 0,
+          "item2": 13,
+          "relation": "with"
+        },
+        {
+          "item1": 6,
+          "item2": 1,
+          "relation": "on"
+        },
+        {
+          "item1": 12,
+          "item2": 12,
+          "relation": "on"
+        },
+        {
+          "item1": 4,
+          "item2": 1,
+          "relation": "against"
+        },
+        {
+          "item1": 5,
+          "item2": 1,
+          "relation": "against"
+        }
+      ],
+      "global_ids": [
+        {
+          "item1": 5142,
+          "item2": 1060359
+        },
+        {
+          "item1": 1060351,
+          "item2": 1060359
+        },
+        {
+          "item1": 5142,
+          "item2": 1060359
+        },
+        {
+          "item1": 1060348,
+          "item2": 1060368
+        },
+        {
+          "item1": 1060350,
+          "item2": 1060368
+        },
+        {
+          "item1": 1060350,
+          "item2": 1060368
+        },
+        {
+          "item1": 1060364,
+          "item2": 1060360
+        },
+        {
+          "item1": 1060375,
+          "item2": 1060351
+        },
+        {
+          "item1": 1060364,
+          "item2": 1060360
+        },
+        {
+          "item1": 1060365,
+          "item2": 1060365
+        },
+        {
+          "item1": 1060348,
+          "item2": 1060360
+        },
+        {
+          "item1": 1060371,
+          "item2": 1060360
+        }
+      ],
+      "constraints": [
+        {
+          "type": "presence",
+          "object": "room",
+          "polarity": "positive"
+        },
+        {
+          "type": "presence",
+          "object": "wall",
+          "polarity": "positive"
+        },
+        {
+          "type": "relation",
+          "subject": "cable",
+          "predicate": "on",
+          "object": "floor"
+        }
+      ],
+      "reasoning": {
+        "explicit_objects": ["room", "desk", "chair", "computer monitor", "computer", "cable", "floor", "shelf", "wall", "paper"],
+        "implied_objects": ["window", "door"],
+        "attributes": [
+            {"object": "cable", "attribute": "white"},
+            {"object": "floor", "attribute": "wooden"},
+            {"object": "computer monitor", "attribute": "grey"}
+        ],
+        "relations": [
+            {"subject": "cable", "predicate": "on", "object": "floor"},
+            {"subject": "computer monitor", "predicate": "on", "object": "desk"},
+            {"subject": "chair", "predicate": "near", "object": "desk"},
+            {"subject": "shelf", "predicate": "on", "object": "wall"}
+        ]
+    }
+
+    },
+    {
+      "name": "VG_100K/6.jpg",
+      "img_id": "vg_6",
+      "caption_ori": "A table is set with a variety of food and drinks, including an apple, a bowl, a glass, and a pan, all arranged on the counter, alongside a bag and a container.",
+      "items": [
+        {
+          "item_id": 0,
+          "label": "counter",
+          "attributes": [
+            "black",
+            "wood"
+          ],
+          "global_item_id": 1023984
+        },
+        {
+          "item_id": 1,
+          "label": "chair",
+          "attributes": [],
+          "global_item_id": 1023970
+        },
+        {
+          "item_id": 2,
+          "label": "bottle",
+          "attributes": [
+            "plastic",
+            "white",
+            "red"
+          ],
+          "global_item_id": 1023957
+        },
+        {
+          "item_id": 3,
+          "label": "lid",
+          "attributes": [
+            "red",
+            "wooden"
+          ],
+          "global_item_id": 5160
+        },
+        {
+          "item_id": 4,
+          "label": "plate",
+          "attributes": [
+            "white",
+            "empty",
+            "dirty"
+          ],
+          "global_item_id": 1023967
+        },
+        {
+          "item_id": 5,
+          "label": "bowl",
+          "attributes": [
+            "wooden",
+            "large",
+            "empty",
+            "circular",
+            "brown"
+          ],
+          "global_item_id": 1023976
+        },
+        {
+          "item_id": 6,
+          "label": "bag",
+          "attributes": [
+            "black",
+            "square"
+          ],
+          "global_item_id": 1023983
+        },
+        {
+          "item_id": 7,
+          "label": "container",
+          "attributes": [
+            "white",
+            "plastic",
+            "empty"
+          ],
+          "global_item_id": 1023972
+        },
+        {
+          "item_id": 8,
+          "label": "bag",
+          "attributes": [
+            "plastic"
+          ],
+          "global_item_id": 1023986
+        },
+        {
+          "item_id": 9,
+          "label": "leg",
+          "attributes": [],
+          "global_item_id": 1023994
+        },
+        {
+          "item_id": 10,
+          "label": "apple",
+          "attributes": [
+            "shiny",
+            "red"
+          ],
+          "global_item_id": 1023988
+        },
+        {
+          "item_id": 11,
+          "label": "pan",
+          "attributes": [
+            "metal",
+            "empty"
+          ],
+          "global_item_id": 1023985
+        },
+        {
+          "item_id": 12,
+          "label": "counter",
+          "attributes": [
+            "black"
+          ],
+          "global_item_id": 1023954
+        },
+        {
+          "item_id": 13,
+          "label": "leg",
+          "attributes": [],
+          "global_item_id": 1023993
+        },
+        {
+          "item_id": 14,
+          "label": "glass",
+          "attributes": [
+            "empty",
+            "clear"
+          ],
+          "global_item_id": 1023975
+        },
+        {
+          "item_id": 15,
+          "label": "glass",
+          "attributes": [
+            "empty"
+          ],
+          "global_item_id": 1023990
+        },
+        {
+          "item_id": 16,
+          "label": "fork",
+          "attributes": [
+            "metal",
+            "steel",
+            "dirty"
+          ],
+          "global_item_id": 1023966
+        }
+      ],
+      "relations": [
+        {
+          "item1": 16,
+          "item2": 4,
+          "relation": "on"
+        },
+        {
+          "item1": 6,
+          "item2": 0,
+          "relation": "on"
+        },
+        {
+          "item1": 5,
+          "item2": 0,
+          "relation": "on"
+        },
+        {
+          "item1": 7,
+          "item2": 0,
+          "relation": "on"
+        },
+        {
+          "item1": 11,
+          "item2": 0,
+          "relation": "on"
+        },
+        {
+          "item1": 8,
+          "item2": 0,
+          "relation": "on"
+        },
+        {
+          "item1": 15,
+          "item2": 0,
+          "relation": "on"
+        },
+        {
+          "item1": 12,
+          "item2": 0,
+          "relation": "on"
+        },
+        {
+          "item1": 14,
+          "item2": 0,
+          "relation": "on"
+        },
+        {
+          "item1": 10,
+          "item2": 0,
+          "relation": "on"
+        },
+        {
+          "item1": 10,
+          "item2": 0,
+          "relation": "on"
+        },
+        {
+          "item1": 16,
+          "item2": 4,
+          "relation": "on"
+        },
+        {
+          "item1": 15,
+          "item2": 0,
+          "relation": "on"
+        },
+        {
+          "item1": 14,
+          "item2": 0,
+          "relation": "on"
+        },
+        {
+          "item1": 16,
+          "item2": 4,
+          "relation": "on"
+        },
+        {
+          "item1": 10,
+          "item2": 0,
+          "relation": "on"
+        },
+        {
+          "item1": 16,
+          "item2": 4,
+          "relation": "on"
+        },
+        {
+          "item1": 6,
+          "item2": 7,
+          "relation": "next to"
+        },
+        {
+          "item1": 13,
+          "item2": 0,
+          "relation": "under"
+        },
+        {
+          "item1": 1,
+          "item2": 9,
+          "relation": "has"
+        },
+        {
+          "item1": 1,
+          "item2": 13,
+          "relation": "has"
+        }
+      ],
+      "global_ids": [
+        {
+          "item1": 1023966,
+          "item2": 1023967
+        },
+        {
+          "item1": 1023983,
+          "item2": 1023984
+        },
+        {
+          "item1": 1023976,
+          "item2": 1023984
+        },
+        {
+          "item1": 1023972,
+          "item2": 1023984
+        },
+        {
+          "item1": 1023985,
+          "item2": 1023984
+        },
+        {
+          "item1": 1023986,
+          "item2": 1023984
+        },
+        {
+          "item1": 1023990,
+          "item2": 1023984
+        },
+        {
+          "item1": 1023954,
+          "item2": 1023984
+        },
+        {
+          "item1": 1023975,
+          "item2": 1023984
+        },
+        {
+          "item1": 1023988,
+          "item2": 1023984
+        },
+        {
+          "item1": 1023988,
+          "item2": 1023984
+        },
+        {
+          "item1": 1023966,
+          "item2": 1023967
+        },
+        {
+          "item1": 1023990,
+          "item2": 1023984
+        },
+        {
+          "item1": 1023975,
+          "item2": 1023984
+        },
+        {
+          "item1": 1023966,
+          "item2": 1023967
+        },
+        {
+          "item1": 1023988,
+          "item2": 1023984
+        },
+        {
+          "item1": 1023966,
+          "item2": 1023967
+        },
+        {
+          "item1": 1023983,
+          "item2": 1023972
+        },
+        {
+          "item1": 1023993,
+          "item2": 1023984
+        },
+        {
+          "item1": 1023970,
+          "item2": 1023994
+        },
+        {
+          "item1": 1023970,
+          "item2": 1023993
+        }
+      ],
+      "constraints": [
+        {
+          "type": "presence",
+          "object": "container",
+          "polarity": "positive"
+        },
+        {
+          "type": "presence",
+          "object": "glass",
+          "polarity": "positive"
+        },
+        {
+          "type": "attribute",
+          "object": "glass",
+          "attribute": "glass"
+        },
+        {
+          "type": "attribute",
+          "object": "pan",
+          "attribute": "glass"
+        },
+        {
+          "type": "relation",
+          "subject": "bag",
+          "predicate": "on",
+          "object": "counter"
+        }
+      ],
+      "reasoning": {
+        "explicit_objects": ["counter", "apple", "bowl", "glass", "pan", "bag", "container", "plate", "bottle", "fork"],
+        "implied_objects": ["chair"],
+        "attributes": [
+            {"object": "apple", "attribute": "red"},
+            {"object": "apple", "attribute": "shiny"},
+            {"object": "pan", "attribute": "metal"},
+            {"object": "bowl", "attribute": "wooden"},
+            {"object": "glass", "attribute": "empty"}
+        ],
+        "relations": [
+            {"subject": "apple", "predicate": "on", "object": "counter"},
+            {"subject": "bowl", "predicate": "on", "object": "counter"},
+            {"subject": "pan", "predicate": "on", "object": "counter"},
+            {"subject": "container", "predicate": "on", "object": "counter"},
+            {"subject": "fork", "predicate": "on", "object": "plate"}
+        ]
+        }
+    },
+    {
+      "name": "VG_100K/7.jpg",
+      "img_id": "vg_7",
+      "caption_ori": "A woman with hair is sitting at a desk, wearing pants, with a laptop and a telephone on top of the desk, a monitor next to the keyboard, and a book placed on the desk, while a cable runs under the desk.",
+      "items": [
+        {
+          "item_id": 0,
+          "label": "window",
+          "attributes": [
+            "brown"
+          ],
+          "global_item_id": 1060428
+        },
+        {
+          "item_id": 1,
+          "label": "wall",
+          "attributes": [],
+          "global_item_id": 1060413
+        },
+        {
+          "item_id": 2,
+          "label": "woman",
+          "attributes": [
+            "smiling"
+          ],
+          "global_item_id": 1060401
+        },
+        {
+          "item_id": 3,
+          "label": "desk",
+          "attributes": [],
+          "global_item_id": 1060412
+        },
+        {
+          "item_id": 4,
+          "label": "wall",
+          "attributes": [
+            "white"
+          ],
+          "global_item_id": 5191
+        },
+        {
+          "item_id": 5,
+          "label": "monitor",
+          "attributes": [
+            "on"
+          ],
+          "global_item_id": 1060386
+        },
+        {
+          "item_id": 6,
+          "label": "floor",
+          "attributes": [],
+          "global_item_id": 5187
+        },
+        {
+          "item_id": 7,
+          "label": "book",
+          "attributes": [
+            "open"
+          ],
+          "global_item_id": 1060434
+        },
+        {
+          "item_id": 8,
+          "label": "desk",
+          "attributes": [],
+          "global_item_id": 1060382
+        },
+        {
+          "item_id": 9,
+          "label": "chair",
+          "attributes": [],
+          "global_item_id": 1060431
+        },
+        {
+          "item_id": 10,
+          "label": "telephone",
+          "attributes": [
+            "pink",
+            "beige",
+            "tan"
+          ],
+          "global_item_id": 1060380
+        },
+        {
+          "item_id": 11,
+          "label": "keyboard",
+          "attributes": [
+            "black",
+            "red"
+          ],
+          "global_item_id": 1060411
+        },
+        {
+          "item_id": 12,
+          "label": "paper",
+          "attributes": [],
+          "global_item_id": 5185
+        },
+        {
+          "item_id": 13,
+          "label": "book",
+          "attributes": [],
+          "global_item_id": 1060407
+        },
+        {
+          "item_id": 14,
+          "label": "pant",
+          "attributes": [
+            "blue"
+          ],
+          "global_item_id": 5184
+        },
+        {
+          "item_id": 15,
+          "label": "cable",
+          "attributes": [],
+          "global_item_id": 1060422
+        },
+        {
+          "item_id": 16,
+          "label": "book",
+          "attributes": [
+            "purple"
+          ],
+          "global_item_id": 5172
+        },
+        {
+          "item_id": 17,
+          "label": "hair",
+          "attributes": [
+            "black"
+          ],
+          "global_item_id": 5179
+        }
+      ],
+      "relations": [
+        {
+          "item1": 16,
+          "item2": 8,
+          "relation": "on"
+        },
+        {
+          "item1": 2,
+          "item2": 17,
+          "relation": "with"
+        },
+        {
+          "item1": 10,
+          "item2": 3,
+          "relation": "on"
+        },
+        {
+          "item1": 2,
+          "item2": 14,
+          "relation": "wearing"
+        },
+        {
+          "item1": 15,
+          "item2": 3,
+          "relation": "under"
+        },
+        {
+          "item1": 5,
+          "item2": 11,
+          "relation": "next to"
+        },
+        {
+          "item1": 10,
+          "item2": 3,
+          "relation": "on top of"
+        }
+      ],
+      "global_ids": [
+        {
+          "item1": 5172,
+          "item2": 1060382
+        },
+        {
+          "item1": 1060401,
+          "item2": 5179
+        },
+        {
+          "item1": 1060380,
+          "item2": 1060412
+        },
+        {
+          "item1": 1060401,
+          "item2": 5184
+        },
+        {
+          "item1": 1060422,
+          "item2": 1060412
+        },
+        {
+          "item1": 1060386,
+          "item2": 1060411
+        },
+        {
+          "item1": 1060380,
+          "item2": 1060412
+        }
+      ],
+      "constraints": [
+        {
+          "type": "presence",
+          "object": "telephone",
+          "polarity": "positive"
+        },
+        {
+          "type": "presence",
+          "object": "desk",
+          "polarity": "positive"
+        },
+        {
+          "type": "attribute",
+          "object": "monitor",
+          "attribute": "on"
+        },
+        {
+          "type": "relation",
+          "subject": "book",
+          "predicate": "on",
+          "object": "desk"
+        }
+      ],
+      "reasoning": {
+        "explicit_objects": ["woman", "desk", "laptop", "telephone", "monitor", "keyboard", "book", "cable", "wall", "floor", "picture"],
+        "implied_objects": ["chair", "window"],
+        "attributes": [
+            {"object": "woman", "attribute": "smiling"},
+            {"object": "monitor", "attribute": "on"},
+            {"object": "pant", "attribute": "blue"},
+            {"object": "book", "attribute": "open"},
+            {"object": "hair", "attribute": "black"}
+        ],
+        "relations": [
+            {"subject": "keyboard", "predicate": "next to", "object": "monitor"},
+            {"subject": "telephone", "predicate": "on", "object": "desk"},
+            {"subject": "book", "predicate": "on", "object": "desk"},
+            {"subject": "cable", "predicate": "under", "object": "desk"}
+        ]
+        }
+    },
+    {
+      "name": "VG_100K/8.jpg",
+      "img_id": "vg_8",
+      "caption_ori": "A man wearing a shirt and pants is sitting at a desk with a computer, his hand resting on the keyboard, while there is a picture on the wall and paper on the desk, along with a drawer.",
+      "items": [
+        {
+          "item_id": 0,
+          "label": "desk",
+          "attributes": [],
+          "global_item_id": 1060463
+        },
+        {
+          "item_id": 1,
+          "label": "wall",
+          "attributes": [],
+          "global_item_id": 1060456
+        },
+        {
+          "item_id": 2,
+          "label": "man",
+          "attributes": [],
+          "global_item_id": 1060459
+        },
+        {
+          "item_id": 3,
+          "label": "shelf",
+          "attributes": [
+            "wood"
+          ],
+          "global_item_id": 1060491
+        },
+        {
+          "item_id": 4,
+          "label": "shirt",
+          "attributes": [
+            "black",
+            "white"
+          ],
+          "global_item_id": 1060451
+        },
+        {
+          "item_id": 5,
+          "label": "desk",
+          "attributes": [],
+          "global_item_id": 1060442
+        },
+        {
+          "item_id": 6,
+          "label": "paper",
+          "attributes": [],
+          "global_item_id": 1060477
+        },
+        {
+          "item_id": 7,
+          "label": "chair",
+          "attributes": [
+            "blue"
+          ],
+          "global_item_id": 1060489
+        },
+        {
+          "item_id": 8,
+          "label": "monitor",
+          "attributes": [
+            "on",
+            "black"
+          ],
+          "global_item_id": 1060436
+        },
+        {
+          "item_id": 9,
+          "label": "drawer",
+          "attributes": [
+            "grey",
+            "silver",
+            "gray"
+          ],
+          "global_item_id": 1060439
+        },
+        {
+          "item_id": 10,
+          "label": "pant",
+          "attributes": [
+            "black"
+          ],
+          "global_item_id": 1060488
+        },
+        {
+          "item_id": 11,
+          "label": "keyboard",
+          "attributes": [
+            "white",
+            "gray"
+          ],
+          "global_item_id": 1060446
+        },
+        {
+          "item_id": 12,
+          "label": "drawer",
+          "attributes": [],
+          "global_item_id": 1060486
+        },
+        {
+          "item_id": 13,
+          "label": "picture",
+          "attributes": [],
+          "global_item_id": 1060455
+        },
+        {
+          "item_id": 14,
+          "label": "paper",
+          "attributes": [],
+          "global_item_id": 1060465
+        },
+        {
+          "item_id": 15,
+          "label": "book",
+          "attributes": [
+            "blue"
+          ],
+          "global_item_id": 1060485
+        },
+        {
+          "item_id": 16,
+          "label": "paper",
+          "attributes": [],
+          "global_item_id": 1060482
+        },
+        {
+          "item_id": 17,
+          "label": "mug",
+          "attributes": [],
+          "global_item_id": 5215
+        },
+        {
+          "item_id": 18,
+          "label": "hand",
+          "attributes": [],
+          "global_item_id": 1060445
+        }
+      ],
+      "relations": [
+        {
+          "item1": 18,
+          "item2": 11,
+          "relation": "on"
+        },
+        {
+          "item1": 2,
+          "item2": 4,
+          "relation": "wears"
+        },
+        {
+          "item1": 13,
+          "item2": 1,
+          "relation": "on"
+        },
+        {
+          "item1": 13,
+          "item2": 1,
+          "relation": "on"
+        },
+        {
+          "item1": 9,
+          "item2": 0,
+          "relation": "of"
+        },
+        {
+          "item1": 14,
+          "item2": 5,
+          "relation": "on"
+        },
+        {
+          "item1": 18,
+          "item2": 11,
+          "relation": "on"
+        },
+        {
+          "item1": 2,
+          "item2": 18,
+          "relation": "has"
+        },
+        {
+          "item1": 18,
+          "item2": 11,
+          "relation": "on"
+        },
+        {
+          "item1": 2,
+          "item2": 18,
+          "relation": "has"
+        },
+        {
+          "item1": 2,
+          "item2": 10,
+          "relation": "wearing"
+        },
+        {
+          "item1": 2,
+          "item2": 4,
+          "relation": "has"
+        }
+      ],
+      "global_ids": [
+        {
+          "item1": 1060445,
+          "item2": 1060446
+        },
+        {
+          "item1": 1060459,
+          "item2": 1060451
+        },
+        {
+          "item1": 1060455,
+          "item2": 1060456
+        },
+        {
+          "item1": 1060455,
+          "item2": 1060456
+        },
+        {
+          "item1": 1060439,
+          "item2": 1060463
+        },
+        {
+          "item1": 1060465,
+          "item2": 1060442
+        },
+        {
+          "item1": 1060445,
+          "item2": 1060446
+        },
+        {
+          "item1": 1060459,
+          "item2": 1060445
+        },
+        {
+          "item1": 1060445,
+          "item2": 1060446
+        },
+        {
+          "item1": 1060459,
+          "item2": 1060445
+        },
+        {
+          "item1": 1060459,
+          "item2": 1060488
+        },
+        {
+          "item1": 1060459,
+          "item2": 1060451
+        }
+      ],
+      "constraints": [
+        {
+          "type": "presence",
+          "object": "shirt",
+          "polarity": "positive"
+        },
+        {
+          "type": "presence",
+          "object": "paper",
+          "polarity": "positive"
+        },
+        {
+          "type": "relation",
+          "subject": "hand",
+          "predicate": "on",
+          "object": "keyboard"
+        }
+      ],
+      "reasoning": {
+        "explicit_objects": ["man", "desk", "shirt", "pant", "keyboard", "monitor", "picture", "paper", "chair", "drawer"],
+        "implied_objects": ["wall", "shelf", "mug"],
+        "attributes": [
+            {"object": "shirt", "attribute": "black"},
+            {"object": "monitor", "attribute": "on"},
+            {"object": "pant", "attribute": "black"},
+            {"object": "keyboard", "attribute": "white"}
+        ],
+        "relations": [
+            {"subject": "hand", "predicate": "on", "object": "keyboard"},
+            {"subject": "picture", "predicate": "on", "object": "wall"},
+            {"subject": "paper", "predicate": "on", "object": "desk"}
+        ]
+        }
+
+    }
+]
+

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import torch
 from diffusers import AutoencoderKL, StableDiffusionXLPipeline, UNet2DConditionModel
-from sgEncoderTraining.datasets.laion_dataset import build_laion_loaders
+from sgEncoderTraining.datasets.laion_dataset_with_constraints import build_laion_loaders
 from sgEncoderTraining.sgEncoder.create_sg_encoder import create_model_and_transforms
 from transformers import AutoTokenizer, PretrainedConfig
 

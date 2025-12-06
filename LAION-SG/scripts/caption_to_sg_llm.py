@@ -47,74 +47,79 @@ SYSTEM_PROMPT = """You are a model that converts image captions into structured 
 in the following JSON format (LAION-SG style), and you MUST think step by step
 before producing the final JSON.
 
-For each caption you receive, you should:
-1) First, reason in natural language about the scene: which objects are present,
-   what attributes they likely have, and how they relate spatially and functionally.
-2) Then output a JSON object with the following keys:
-   - "reasoning": a short paragraph (2-5 sentences) explaining what is in the scene
-                  and how you inferred the objects/relations from the caption. This is
-                  your chain-of-thought.
-   - "items": a list of objects with attributes (detailed but still grounded in the caption).
-   - "relations": a list of relations between objects (spatial, functional, or interaction).
-   - "constraints": OPTIONAL list of constraints of types: presence, attribute, relation, count.
+For each caption you receive, you should do two stages:
 
-Example JSON schema:
+STAGE 1 - STRUCTURED REASONING
+- Infer the important objects, attributes, and relations in a structured way.
+- Represent your chain-of-thought as a JSON object with this schema:
 
-{
-  "reasoning": "The caption mentions a brown dog on a couch indoors. I identify 'dog' and 'couch' as main objects, ...",
-  "items": [
-    {
-      "item_id": 0,
-      "label": "dog",
-      "attributes": ["brown"],
-      "global_item_id": 0
-    },
-    {
-      "item_id": 1,
-      "label": "couch",
-      "attributes": ["red"],
-      "global_item_id": 1
-    }
-  ],
-  "relations": [
-    {
-      "item1": 0,
-      "item2": 1,
-      "relation": "on"
-    }
-  ],
-  "constraints": [
-    { "type": "presence", "object": "dog", "polarity": "positive" },
-    { "type": "attribute", "object": "dog", "attribute": "brown" },
-    { "type": "relation", "subject": "dog", "predicate": "on", "object": "couch" },
-    { "type": "count", "object": "person", "operator": ">=", "value": 2 }
-  ]
-}
+  "reasoning": {
+    "explicit_objects": [ "object mentioned directly in caption (e.g., couch)", ... ],
+    "implied_objects":  [ "typical/background objects consistent with the caption (e.g., floor, wall)", ... ],
+    "attributes": [
+      { "object": "couch", "attribute": "purple" },
+      { "object": "wall", "attribute": "white" }
+    ],
+    "relations": [
+      { "subject": "couch", "predicate": "next to", "object": "window" },
+      { "subject": "vase",  "predicate": "on",      "object": "table" }
+    ]
+  }
 
-Rules:
-- ALWAYS include a "reasoning" string that explains your chain-of-thought.
-- Be **detailed and slightly creative** in attributes and relations:
-  - You may add plausible fine-grained attributes (colors, sizes, poses, materials)
-    that are strongly suggested or typical for the caption (e.g., sky → blue,
-    grass → green, road → gray), as long as you do NOT invent entirely new object
-    categories that are not mentioned or clearly implied.
-  - You may add natural spatial relations (e.g., "in front of", "behind", "next to")
-    when they are typical for the described scene.
-- Use a small, coherent set of object labels and attributes; prefer singular nouns
-  ("person", "dog", "car") for labels and simple adjectives for attributes.
-- Use integer item_id indices starting from 0.
+- explicit_objects: ONLY objects explicitly named in the caption.
+- implied_objects: plausible objects given the scene type (e.g., floor/wall/window in a living room),
+  but do NOT introduce objects that contradict the caption.
+- attributes: colors/materials/sizes/poses that are explicit or very typical.
+- relations: spatial/functional relations that are clearly suggested by the caption and objects.
+
+STAGE 2 - SCENE GRAPH CONSTRUCTION
+- From your reasoning, build a final scene graph with these keys:
+
+  - "items": a list of objects with attributes:
+      {
+        "item_id": 0,
+        "label": "couch",
+        "attributes": ["purple"],
+        "global_item_id": 0
+      }
+
+  - "relations": a list of relations between objects:
+      {
+        "item1": 0,
+        "item2": 1,
+        "relation": "next to"
+      }
+
+  - "constraints": OPTIONAL list of constraints:
+      * presence:  {"type": "presence", "object": "...", "polarity": "positive"|"negative"}
+      * attribute: {"type": "attribute", "object": "...", "attribute": "..."}
+      * relation:  {"type": "relation", "subject": "...", "predicate": "...", "object": "..."}
+      * count:     {"type": "count", "object": "...", "operator": ">=|<=|==", "value": N}
+
+Rules for items and relations:
+- Use simple singular labels like "person", "dog", "car", "tree", "couch", "table".
+- attributes is a list of short adjectives (colors, sizes, materials, states).
+- item_id are integers starting from 0; global_item_id can equal item_id.
 - relations[i].item1 and relations[i].item2 must refer to item_id values.
-- constraints is OPTIONAL, but when present it must only contain the 4 allowed types:
-  presence, attribute, relation, count (with fields as in the example).
+
+Rules for constraints:
+- constraints is OPTIONAL, but when present must use the schemas above.
+- You SHOULD convert the most important facts from your reasoning into constraints
+  (e.g., presence of key objects, critical relations, important counts).
 - If the user provides an ExtraConstraints section, interpret each natural-language
   constraint and, when possible, map it to exactly ONE of:
     * presence: {"type": "presence", "object": "...", "polarity": "positive"|"negative"}
     * attribute: {"type": "attribute", "object": "...", "attribute": "..."}
-    * relation: {"type": "relation", "subject": "...", "predicate": "...", "object": "..."}
-    * count: {"type": "count", "object": "...", "operator": ">=|<=|==", "value": N}
+    * relation:  {"type": "relation", "subject": "...", "predicate": "...", "object": "..."}
+    * count:     {"type": "count", "object": "...", "operator": ">=|<=|==", "value": N}
   Ignore nonsense or unsupported constraints.
-- ALWAYS return a single valid JSON object with keys: "reasoning", "items", "relations",
-  and optionally "constraints".
+
+Output:
+- ALWAYS return a single JSON object with keys:
+  - "reasoning" (structured as above),
+  - "items",
+  - "relations",
+  - and optionally "constraints".
 """
 
 
@@ -123,39 +128,42 @@ def build_few_shot_prompt(
     target_caption: str,
     extra_constraints_text: Optional[str] = None,
 ) -> str:
-    """Build a many-shot prompt from VG examples, now with CoT-style reasoning.
+    """Build a many-shot prompt from VG examples, now with structured CoT reasoning.
 
-    We show the model how to: (1) explain the scene in natural language, and
-    (2) map that explanation into the JSON schema. Examples use a generic
-    reasoning string; the model is free to adapt and be more specific.
+    Each example shows:
+      - a caption
+      - a (template) structured reasoning block
+      - the corresponding scene graph (items/relations/constraints)
     """
 
-    parts: List[str] = ["Here are some examples of caption → reasoning → scene graph:\n"]
+    parts: List[str] = ["Here are examples of caption → structured reasoning → scene graph:\n"]
 
     for ex in examples:
+        # Use provided reasoning if present; otherwise fall back to an empty template
+        reasoning = ex.get("reasoning") or {
+            "explicit_objects": [],
+            "implied_objects": [],
+            "attributes": [],
+            "relations": [],
+        }
+
         sg = {
-            "reasoning": (
-                "From this caption, I extract the main entities, their visual "
-                "attributes (colors, sizes, poses), and how they are spatially "
-                "and functionally related. I then assign item_ids, group attributes "
-                "with the correct labels, and create relations expressing the "
-                "layout and interactions."
-            ),
-            "items": ex["items"],
-            "relations": ex["relations"],
+            "reasoning": reasoning,
+            "items": ex.get("items", []),
+            "relations": ex.get("relations", []),
         }
         if "constraints" in ex:
             sg["constraints"] = ex["constraints"]
 
         parts.append(
             "Caption:\n"
-            f"{ex['caption_ori']}\n"
+            f"{ex.get('caption_ori', '')}\n"
             "SceneGraphWithReasoning:\n"
             f"{json.dumps(sg, indent=2)}\n"
         )
 
     # Target query
-    parts.append("Now convert the following caption into a detailed scene graph with reasoning.\n")
+    parts.append("Now for the following caption, first do structured reasoning, then build the scene graph.\n")
     parts.append(f"Caption:\n{target_caption}\n")
     if extra_constraints_text:
         parts.append("ExtraConstraints:\n")

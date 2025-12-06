@@ -8,7 +8,7 @@ from sgEncoderTraining.training.logger import setup_logging
 from configs.configs_laion import parse_args
 from sgEncoderTraining.training.scheduler import cosine_lr
 from sgEncoderTraining.training.train_and_val_one_iter import train_by_iters
-from sgEncoderTraining.datasets.laion_dataset import build_laion_loaders
+from sgEncoderTraining.datasets.laion_dataset_with_constraints import build_laion_loaders
 import logging
 import os
 import torch
