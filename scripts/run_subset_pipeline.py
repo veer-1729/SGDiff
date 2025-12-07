@@ -107,6 +107,16 @@ def main():
     train_clean = args.dataset_dir / "captions_train_subset_clean.json"
     val_clean = args.dataset_dir / "captions_val_subset_clean.json"
 
+    def ensure_clean(raw_path, clean_path, model, temp):
+        if clean_path.exists():
+            print(f"Skipping cleaning for {clean_path.name} (already exists)")
+            return
+        run_clean(str(raw_path), str(clean_path), str(args.dataset_dir), str(args.vocab_json),
+                  model, temp)
+
+    ensure_clean(train_raw, train_clean, args.clean_model, args.clean_temp)
+    ensure_clean(val_raw, val_clean, args.clean_model, args.clean_temp)
+
     run_clean(str(train_raw), str(train_clean), str(args.dataset_dir), str(args.vocab_json),
               args.clean_model, args.clean_temp)
     run_clean(str(val_raw), str(val_clean), str(args.dataset_dir), str(args.vocab_json),
@@ -115,8 +125,8 @@ def main():
     train_laion = args.work_dir / "vg_train_subset.json"
     val_laion = args.work_dir / "vg_val_subset.json"
 
-    run_convert(str(args.dataset_dir / args.train_h5), str(args.vocab_json), str(train_clean), str(train_laion))
-    run_convert(str(args.dataset_dir / args.val_h5), str(args.vocab_json), str(val_clean), str(val_laion))
+    run_convert(str(args.dataset_dir / args.train_h5), str(args.vocab_json), str(train_clean), str(train_laion), max_samples=args.train_size)
+    run_convert(str(args.dataset_dir / args.val_h5), str(args.vocab_json), str(val_clean), str(val_laion), max_samples=args.val_size)
 
     print("Subsets created:")
     print("  train Laion:", train_laion)
