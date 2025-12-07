@@ -135,9 +135,16 @@ def convert_split(
         attr_lookup = build_attribute_lookup(attributes_json, valid_object_ids, attr_names_list)
 
         total = len(image_ids)
-        indices = list(range(total))
-        if max_samples is not None and max_samples < total:
+        filtered_indices = []
+        for idx in range(total):
+            rel_path = _decode_path(image_paths[idx])
+            if rel_path in caption_map:
+                filtered_indices.append(idx)
+
+        indices = filtered_indices
+        if max_samples is not None and max_samples < len(indices):
             random.shuffle(indices)
+            indices = indices[:max_samples]
         attr_row = 0
 
         for idx in indices:
