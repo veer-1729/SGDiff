@@ -40,8 +40,12 @@ def write_subset(captions, target_path):
 
 
 def run_clean(input_json, output_json, dataset_dir, vocab_json, model, temp):
+    script_dir = Path(__file__).resolve().parent
+    clean_script = script_dir / "clean_captions_with_sg.py"
+    if not clean_script.exists():
+        clean_script = script_dir.parent / "LAION-SG" / "scripts" / "clean_captions_with_sg.py"
     subprocess.run([
-        "python", "scripts/clean_captions_with_sg.py",
+        "python", str(clean_script),
         "--dataset_dir", dataset_dir,
         "--vocab_json", vocab_json,
         "--captions_in", input_json,
