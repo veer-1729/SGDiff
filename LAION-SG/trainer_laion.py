@@ -212,10 +212,10 @@ def trainer():
     # Projection head to align sgEncoder pooled embeddings to CLIP text dim
     contrastive_head = None
     if args.use_contrastive:
-        target_dim = getattr(text_encoder_cls_two.config_class, "projection_dim", None)
-        # safer: read from loaded encoder config
+        # Use the CLIP text encoder 2 projection dimension as target
         target_dim = getattr(text_encoder_two.config, "projection_dim", None) or getattr(text_encoder_two.config, "hidden_size")
-        contrastive_head = ProjectionHead(in_dim=args.embed_dim, out_dim=target_dim)
+        # Map from sgEncoder pooled dim to the CLIP text dim; using target_dim as input dim avoids mismatches
+        contrastive_head = ProjectionHead(in_dim=target_dim, out_dim=target_dim)
 
     model = create_model_and_transforms(
         args,
