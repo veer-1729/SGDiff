@@ -6,6 +6,7 @@ import torch.nn.functional as F
 from sgEncoderTraining.training.precision import get_autocast
 from sgEncoderTraining.global_var import *
 from tqdm import tqdm
+from sgEncoderTraining.training.contrastive import info_nce_loss
 
 
 def unwrap_model(model):
@@ -152,7 +153,10 @@ def train_by_iters(model,
                    accelerator,
                    tb_writer=None,
                    val_count=10,
-                   accumulation_steps=2):
+                   accumulation_steps=2,
+                   contrastive_head=None,
+                   text_encoder_two=None,
+                   tokenizer_two=None):
 
 
     autocast = get_autocast(args.precision, getattr(args, "autocast_dtype", None))
@@ -223,6 +227,8 @@ def train_by_iters(model,
 
         unet_added_conditions = {"time_ids": add_time_ids}
 
+        contrastive_loss = None
+
         with autocast():
             # applying sg
             prompt_embeds, pooled_embeds = model(all_triples, all_isolated_items, all_global_ids)
@@ -238,7 +244,41 @@ def train_by_iters(model,
 
             target = noise
 
-            total_loss = F.mse_loss(model_pred.float(), target.float(), reduction="mean")
+            diffusion_loss = F.mse_loss(model_pred.float(), target.float(), reduction="mean")
+
+            # Optional contrastive alignment against frozen CLIP text encoder 2
+            if args.use_contrastive and contrastive_head is not None and text_encoder_two is not None and tokenizer_two is not None:
+                text_list = []
+                for t in all_text_prompts:
+                    if isinstance(t, bytes):
+                        t = t.decode("utf-8")
+                    text_list.append(t)
+
+                text_inputs = tokenizer_two(
+                    text_list,
+                    padding="max_length",
+                    truncation=True,
+                    max_length=getattr(tokenizer_two, "model_max_length", 77),
+                    return_tensors="pt",
+                ).to(accelerator.device)
+
+                with torch.no_grad():
+                    text_outputs = text_encoder_two(**text_inputs)
+                    text_embeds = getattr(text_outputs, "text_embeds", None)
+                    if text_embeds is None:
+                        # Fallback to CLS token
+                        text_embeds = text_outputs.last_hidden_state[:, 0, :]
+
+                graph_embeds = contrastive_head(pooled_embeds)
+                contrastive_loss = info_nce_loss(
+                    graph_embeds.float(),
+                    text_embeds.float(),
+                    temperature=getattr(args, "contrastive_temperature", 0.07),
+                )
+
+            total_loss = diffusion_loss
+            if contrastive_loss is not None:
+                total_loss = total_loss + getattr(args, "contrastive_weight", 0.05) * contrastive_loss
 
 
         if scaler is not None:

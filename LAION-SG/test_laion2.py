@@ -7,6 +7,7 @@ import torch
 from diffusers import AutoencoderKL, StableDiffusionXLPipeline, UNet2DConditionModel
 from sgEncoderTraining.datasets.laion_dataset_with_constraints import build_laion_loaders
 from sgEncoderTraining.sgEncoder.create_sg_encoder import create_model_and_transforms
+from sgEncoderTraining.training.lora import inject_lora_into_unet, load_lora_weights
 from transformers import AutoTokenizer, PretrainedConfig
 
 
@@ -36,6 +37,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--precision", type=str, default="fp16")
     parser.add_argument("--force_quick_gelu", action="store_true")
     parser.add_argument("--pretrained_image", action="store_true")
+    # LoRA options
+    parser.add_argument("--use_lora", action="store_true", help="Enable LoRA on UNet cross-attention.")
+    parser.add_argument("--lora_weights_path", type=str, default="", help="Path to saved LoRA weights.")
+    parser.add_argument("--lora_rank", type=int, default=4, help="LoRA rank (must match training).")
+    parser.add_argument("--lora_alpha", type=float, default=1.0, help="LoRA alpha (must match training).")
     return parser.parse_args()
 
 
@@ -115,6 +121,17 @@ def main():
         torch_dtype=torch.float16,
         cache_dir=args.cache_dir,
     ).to(device)
+
+    # Optionally inject and load LoRA weights
+    if args.use_lora:
+        lora_layers = inject_lora_into_unet(
+            unet,
+            rank=args.lora_rank,
+            alpha=args.lora_alpha,
+        )
+        if args.lora_weights_path:
+            load_lora_weights(lora_layers, args.lora_weights_path, device)
+        print(f"LoRA enabled: {len(lora_layers)} layers")
 
     model = create_model_and_transforms(
         args,

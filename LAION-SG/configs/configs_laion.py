@@ -30,6 +30,19 @@ def parse_args():
     parser.add_argument("--compile_model", type=bool, default=False)
     parser.add_argument("--pretrained_sgencoder_path", type=str, default="", help="Path to pretrained sgEncoder checkpoint.")
 
+    # Contrastive alignment (optional)
+    parser.add_argument("--use_contrastive", action="store_true", help="Enable CLIP-style contrastive loss (graph vs caption+constraints).")
+    parser.add_argument("--contrastive_weight", type=float, default=0.05, help="Weight for contrastive loss term.")
+    parser.add_argument("--contrastive_temperature", type=float, default=0.07, help="Temperature for InfoNCE.")
+
+    # LoRA config
+    parser.add_argument("--use_lora", action="store_true", default=False, help="Enable LoRA on UNet cross-attention.")
+    parser.add_argument("--lora_rank", type=int, default=4, help="LoRA rank (4-8 recommended for minimal overhead).")
+    parser.add_argument("--lora_alpha", type=float, default=1.0, help="LoRA scaling factor.")
+    parser.add_argument("--lora_dropout", type=float, default=0.0, help="LoRA dropout rate.")
+    parser.add_argument("--lora_lr", type=float, default=1e-5, help="Learning rate for LoRA params (usually lower than sgEncoder LR).")
+    parser.add_argument("--lora_weights_path", type=str, default="", help="Path to load pretrained LoRA weights.")
+
     parser.add_argument("--seed", type=int, default=42)
 
     parser.add_argument("--num_inference_steps", type=int, default=40)

@@ -22,6 +22,16 @@ from diffusers import (
 )
 from diffusers.utils.import_utils import is_xformers_available
 from accelerate import Accelerator, DistributedDataParallelKwargs
+from sgEncoderTraining.training.lora import (
+    inject_lora_into_unet,
+    get_lora_params,
+    save_lora_weights,
+    load_lora_weights,
+)
+from sgEncoderTraining.training.contrastive import (
+    ProjectionHead,
+    info_nce_loss,
+)
 
 accelerator = Accelerator(kwargs_handlers=[DistributedDataParallelKwargs(find_unused_parameters=True)])
 
@@ -185,6 +195,28 @@ def trainer():
     text_encoder_two.requires_grad_(False)
     unet.requires_grad_(False)
 
+    # Optionally inject LoRA into UNet cross-attention
+    lora_layers = []
+    if args.use_lora:
+        lora_layers = inject_lora_into_unet(
+            unet,
+            rank=args.lora_rank,
+            alpha=args.lora_alpha,
+            dropout=args.lora_dropout,
+        )
+        # Load pretrained LoRA weights if provided
+        if args.lora_weights_path and os.path.isfile(args.lora_weights_path):
+            load_lora_weights(lora_layers, args.lora_weights_path, accelerator.device)
+        logging.info(f"LoRA enabled: {len(lora_layers)} layers, rank={args.lora_rank}")
+
+    # Projection head to align sgEncoder pooled embeddings to CLIP text dim
+    contrastive_head = None
+    if args.use_contrastive:
+        target_dim = getattr(text_encoder_cls_two.config_class, "projection_dim", None)
+        # safer: read from loaded encoder config
+        target_dim = getattr(text_encoder_two.config, "projection_dim", None) or getattr(text_encoder_two.config, "hidden_size")
+        contrastive_head = ProjectionHead(in_dim=args.embed_dim, out_dim=target_dim)
+
     model = create_model_and_transforms(
         args,
         text_encoders=[text_encoder_one, text_encoder_two],
@@ -196,7 +228,9 @@ def trainer():
         pretrained_image=args.pretrained_image,
     ).to(accelerator.device)
 
-    del text_encoder_one, text_encoder_two, tokenizer_one, tokenizer_two
+    # Keep text_encoder_two + tokenizer_two if contrastive is enabled
+    if not args.use_contrastive:
+        del text_encoder_one, text_encoder_two, tokenizer_one, tokenizer_two
 
     if args.pretrained_sgencoder_path:
         if os.path.isfile(args.pretrained_sgencoder_path):
@@ -234,11 +268,35 @@ def trainer():
         gain_or_bias_params = [p for n, p in named_parameters if exclude(n, p) and p.requires_grad]
         rest_params = [p for n, p in named_parameters if include(n, p) and p.requires_grad]
 
+        param_groups = [
+            {"params": gain_or_bias_params, "weight_decay": 0.},
+            {"params": rest_params, "weight_decay": args.wd},
+        ]
+
+        # Add LoRA params with separate LR if enabled
+        if args.use_lora and lora_layers:
+            lora_params = get_lora_params(lora_layers)
+            param_groups.append({
+                "params": lora_params,
+                "weight_decay": 0.,
+                "lr": args.lora_lr,
+            })
+            total_lora_params = sum(p.numel() for p in lora_params)
+            logging.info(f"Added {total_lora_params:,} LoRA parameters to optimizer (lr={args.lora_lr})")
+
+        # Add contrastive projection head params if enabled
+        if args.use_contrastive and contrastive_head is not None:
+            contrastive_params = [p for p in contrastive_head.parameters() if p.requires_grad]
+            param_groups.append({
+                "params": contrastive_params,
+                "weight_decay": args.wd,
+                "lr": args.lr,
+            })
+            total_proj_params = sum(p.numel() for p in contrastive_params)
+            logging.info(f"Added {total_proj_params:,} projection params for contrastive head.")
+
         optimizer = optim.AdamW(
-            [
-                {"params": gain_or_bias_params, "weight_decay": 0.},
-                {"params": rest_params, "weight_decay": args.wd},
-            ],
+            param_groups,
             lr=args.lr,
             betas=(args.beta1, args.beta2),
             eps=args.eps,
@@ -263,9 +321,14 @@ def trainer():
         logging.debug('Finished loading wandb.')
 
 
-    model, train_dataloader, val_dataloader,optimizer, scaler, scheduler, vae, unet, noise_scheduler = accelerator.prepare(
-        model, train_dataloader, val_dataloader, optimizer, scaler, scheduler, vae, unet, noise_scheduler
-    )
+    if contrastive_head is not None:
+        model, contrastive_head, train_dataloader, val_dataloader,optimizer, scaler, scheduler, vae, unet, noise_scheduler = accelerator.prepare(
+            model, contrastive_head, train_dataloader, val_dataloader, optimizer, scaler, scheduler, vae, unet, noise_scheduler
+        )
+    else:
+        model, train_dataloader, val_dataloader,optimizer, scaler, scheduler, vae, unet, noise_scheduler = accelerator.prepare(
+            model, train_dataloader, val_dataloader, optimizer, scaler, scheduler, vae, unet, noise_scheduler
+        )
 
     for epoch in range(start_epoch, args.epochs):
         if accelerator.is_main_process:
@@ -276,7 +339,16 @@ def trainer():
                        unet,
                        noise_scheduler,
                        accelerator,
-                       writer, val_count=args.val_times_per_epoch)
+                       writer,
+                       val_count=args.val_times_per_epoch,
+                       contrastive_head=contrastive_head,
+                       text_encoder_two=text_encoder_two if args.use_contrastive else None,
+                       tokenizer_two=tokenizer_two if args.use_contrastive else None)
+
+    # Save LoRA weights at end of training
+    if args.use_lora and lora_layers and accelerator.is_main_process:
+        lora_path = os.path.join(args.checkpoint_path, "lora_weights_final.pt")
+        save_lora_weights(lora_layers, lora_path)
 
 if __name__ == "__main__":
     trainer()
