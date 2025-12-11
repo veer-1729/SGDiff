@@ -12,9 +12,10 @@ import argparse
 import os
 from pathlib import Path
 import subprocess
-
 import torch
 from pytorch_fid.fid_score import calculate_fid_given_paths
+import wandb
+
 
 try:
     from pytorch_gan_metrics import get_inception_score
@@ -190,6 +191,18 @@ def main() -> None:
     args = parse_args()
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
+    # wandb setup
+    wandb.init(
+        project="sgdiff-eval",
+        name="fid-is-eval",
+        config={
+            "num_samples": args.num_samples,
+            "checkpoints": args.checkpoints,
+            "compute_is": args.compute_is,
+        },
+    )
+    summary_table = wandb.Table(columns=["checkpoint", "fid", "is_mean", "is_std"])
+
     real_dir = os.path.abspath(args.real_dir)
     output_root = os.path.abspath(args.output_root)
     os.makedirs(output_root, exist_ok=True)
@@ -218,6 +231,13 @@ def main() -> None:
         fid = compute_fid(real_dir=real_dir, gen_dir=gen_dir, batch_size=50, device=device)
         print(f"FID ({ckpt_name}): {fid:.4f}")
 
+        # log to wandb
+        wandb.log({
+            f"fid/{ckpt_name}": fid,
+            "current_checkpoint": ckpt_name,
+        })
+
+
         # 3) Optionally compute Inception Score
         is_mean = is_std = None
         if args.compute_is:
@@ -233,6 +253,14 @@ def main() -> None:
                 )
                 print(f"Inception Score ({ckpt_name}): {is_mean:.4f} ± {is_std:.4f}")
 
+                # log to wandb again
+                wandb.log({
+                    f"inception_score_mean/{ckpt_name}": is_mean,
+                    f"inception_score_std/{ckpt_name}": is_std,
+                    "current_checkpoint": ckpt_name,
+                })
+
+
         results.append(
             {
                 "checkpoint": ckpt,
@@ -243,14 +271,25 @@ def main() -> None:
             }
         )
 
-    # Print summary table
+        # add to summary table
+        summary_table.add_data(
+            ckpt_name,
+            fid,
+            is_mean,
+            is_std,
+        )
+
+
+    # Print summary table and log to wandb
     print("\n=== Evaluation Summary ===")
     for r in results:
         line = f"{Path(r['checkpoint']).name}: FID={r['fid']:.4f}"
         if r["is_mean"] is not None:
             line += f", IS={r['is_mean']:.4f} ± {r['is_std']:.4f}"
         print(line)
-
+    
+    wandb.log({"evaluation_summary": summary_table})
+    wandb.finish()
 
 if __name__ == "__main__":
     main()
