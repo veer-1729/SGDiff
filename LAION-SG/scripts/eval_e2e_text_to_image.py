@@ -25,6 +25,7 @@ from pathlib import Path
 
 import torch
 from pytorch_fid.fid_score import calculate_fid_given_paths
+import wandb
 
 try:
     from pytorch_gan_metrics import get_inception_score
@@ -214,6 +215,17 @@ def main() -> None:
     out_root = args.output_root.resolve()
     out_root.mkdir(parents=True, exist_ok=True)
 
+    wandb.init(
+        project="sgdiff-eval",
+        name="e2e-text-to-image",
+        config={
+            "num_samples": max_samples,
+            "checkpoints": [str(c) for c in args.checkpoints],
+            "compute_is": args.compute_is,
+        },
+    )
+    summary_table = wandb.Table(columns=["checkpoint", "fid", "is_mean", "is_std"])
+
     # 1) Build real subset directory + subset JSON
     real_dir = out_root / "real"
     subset_entries = build_real_subset_dir(
@@ -281,6 +293,17 @@ def main() -> None:
         print(f"FID: {fid:.4f}")
         if is_mean is not None:
             print(f"IS:  {is_mean:.4f} ± {is_std:.4f}")
+        wandb.log({
+            f"fid/{ckpt_name}": fid,
+            "current_checkpoint": ckpt_name,
+        })
+        if is_mean is not None:
+            wandb.log({
+                f"inception_score_mean/{ckpt_name}": is_mean,
+                f"inception_score_std/{ckpt_name}": is_std,
+                "current_checkpoint": ckpt_name,
+            })
+        summary_table.add_data(ckpt_name, fid, is_mean, is_std)
 
     # 4) Save results
     results_path = out_root / "metrics.json"
@@ -293,6 +316,8 @@ def main() -> None:
             line += f", IS={r['is_mean']:.4f} ± {r['is_std']:.4f}"
         print(line)
     print(f"\nSaved: {results_path}")
+    wandb.log({"evaluation_summary": summary_table})
+    wandb.finish()
 
 
 if __name__ == "__main__":

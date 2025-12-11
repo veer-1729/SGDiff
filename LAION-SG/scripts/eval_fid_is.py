@@ -15,13 +15,7 @@ import subprocess
 import torch
 from pytorch_fid.fid_score import calculate_fid_given_paths
 import wandb
-
-
-try:
-    from pytorch_gan_metrics import get_inception_score
-    HAS_PYTORCH_GAN_METRICS = True
-except ImportError:
-    HAS_PYTORCH_GAN_METRICS = False
+from pytorch_gan_metrics import get_inception_score
 
 
 def run_generation_for_checkpoint(
@@ -98,14 +92,8 @@ def compute_inception_score(
     device: str | None = None,
 ) -> tuple[float, float]:
     """
-    Compute Inception Score for gen_dir using pytorch-gan-metrics (if installed).
+    Compute Inception Score for gen_dir using pytorch-gan-metrics.
     """
-    if not HAS_PYTORCH_GAN_METRICS:
-        raise RuntimeError(
-            "pytorch-gan-metrics is not installed. "
-            "Install with `pip install pytorch-gan-metrics` to enable Inception Score."
-        )
-
     if device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -242,24 +230,19 @@ def main() -> None:
         # 3) Optionally compute Inception Score
         is_mean = is_std = None
         if args.compute_is:
-            if not HAS_PYTORCH_GAN_METRICS:
-                print("WARNING: pytorch-gan-metrics not installed; skipping Inception Score.")
-            else:
-                print(f"Computing Inception Score for checkpoint: {ckpt}")
-                is_mean, is_std = compute_inception_score(
-                    gen_dir=gen_dir,
-                    batch_size=32,
-                    splits=10,
-                    device=device,
-                )
-                print(f"Inception Score ({ckpt_name}): {is_mean:.4f} ± {is_std:.4f}")
-
-                # log to wandb again
-                wandb.log({
-                    f"inception_score_mean/{ckpt_name}": is_mean,
-                    f"inception_score_std/{ckpt_name}": is_std,
-                    "current_checkpoint": ckpt_name,
-                })
+            print(f"Computing Inception Score for checkpoint: {ckpt}")
+            is_mean, is_std = compute_inception_score(
+                gen_dir=gen_dir,
+                batch_size=32,
+                splits=10,
+                device=device,
+            )
+            print(f"Inception Score ({ckpt_name}): {is_mean:.4f} ± {is_std:.4f}")
+            wandb.log({
+                f"inception_score_mean/{ckpt_name}": is_mean,
+                f"inception_score_std/{ckpt_name}": is_std,
+                "current_checkpoint": ckpt_name,
+            })
 
 
         results.append(
