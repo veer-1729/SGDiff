@@ -26,6 +26,7 @@ from pathlib import Path
 import torch
 from pytorch_fid.fid_score import calculate_fid_given_paths
 import wandb
+from PIL import Image
 
 try:
     from pytorch_gan_metrics import get_inception_score
@@ -34,9 +35,16 @@ except ImportError:
     HAS_PYTORCH_GAN_METRICS = False
 
 
-def _safe_copy(src: Path, dst: Path) -> None:
+def _safe_copy_as_rgb_jpeg(src: Path, dst: Path) -> None:
+    """
+    Ensure images are readable by pytorch-fid in batches:
+    - convert to RGB (avoid grayscale/RGBA channel mismatches)
+    - save as JPEG
+    """
     dst.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(src, dst)
+    with Image.open(src) as im:
+        im = im.convert("RGB")
+        im.save(dst, format="JPEG", quality=95)
 
 
 def build_real_subset_dir(
@@ -68,7 +76,7 @@ def build_real_subset_dir(
 
         # Save as {img_id}.jpg to match the generated naming convention in test_laion2.py
         dst = out_real_dir / f"{img_id}.jpg"
-        _safe_copy(src, dst)
+        _safe_copy_as_rgb_jpeg(src, dst)
         used.append(entry)
 
     return used
