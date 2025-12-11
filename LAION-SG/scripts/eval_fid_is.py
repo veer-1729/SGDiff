@@ -73,7 +73,7 @@ def run_generation_for_checkpoint(
     subprocess.run(cmd, check=True)
 
 
-def compute_fid(real_dir: str, gen_dir: str, batch_size: int = 50, device: str | None = None) -> float:
+def compute_fid(real_dir: str, gen_dir: str, batch_size: int = 50, device: str | None = None, num_workers: int = 0) -> float:
     """
     Compute FID between real_dir and gen_dir using pytorch-fid.
     """
@@ -86,6 +86,7 @@ def compute_fid(real_dir: str, gen_dir: str, batch_size: int = 50, device: str |
         batch_size=batch_size,
         device=device,
         dims=2048,
+        num_workers=num_workers,
     )
     return float(fid)
 
