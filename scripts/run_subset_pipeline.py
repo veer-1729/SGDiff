@@ -104,8 +104,8 @@ def main():
     write_subset(train_caps, train_raw)
     write_subset(val_caps, val_raw)
 
-    train_clean = args.dataset_dir / "captions_train_subset_clean.json"
-    val_clean = args.dataset_dir / "captions_val_subset_clean.json"
+    train_clean = args.dataset_dir / "captions_train_500_subset_clean.json"
+    val_clean = args.dataset_dir / "captions_val_500_subset_clean.json"
 
     def ensure_clean(raw_path, clean_path, model, temp):
         if clean_path.exists():
