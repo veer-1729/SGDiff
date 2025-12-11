@@ -19,7 +19,7 @@ print(f"Loaded {len(data)} entries from {JSON_PATH}")
 num_copied = 0
 
 for item in data:
-    rel_path = item.get("file_name") or item.get("img_path")
+    rel_path = item["name"]
 
     if rel_path is None:
         continue
