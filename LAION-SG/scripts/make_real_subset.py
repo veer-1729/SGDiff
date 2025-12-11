@@ -4,7 +4,7 @@ import shutil
 from pathlib import Path
 
 
-JSON_PATH = "vg_val_subset.json" 
+JSON_PATH = "vg_val_500_subset.json" 
 VG_ROOT = "../datasets/vg/images" 
 OUT_DIR = "../datasets/vg/images/val_real_subset"
 
