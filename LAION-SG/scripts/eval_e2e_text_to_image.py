@@ -27,12 +27,7 @@ import torch
 from pytorch_fid.fid_score import calculate_fid_given_paths
 import wandb
 from PIL import Image
-
-try:
-    from pytorch_gan_metrics import get_inception_score
-    HAS_PYTORCH_GAN_METRICS = True
-except ImportError:
-    HAS_PYTORCH_GAN_METRICS = False
+import torch_fidelity
 
 
 def _safe_copy_as_rgb_jpeg(src: Path, dst: Path) -> None:
@@ -168,18 +163,17 @@ def compute_fid(real_dir: Path, gen_dir: Path, batch_size: int = 50, device: str
 
 
 def compute_inception_score(gen_dir: Path, batch_size: int = 32, splits: int = 10, device: str | None = None):
-    if not HAS_PYTORCH_GAN_METRICS:
-        raise RuntimeError(
-            "pytorch-gan-metrics is not installed. Install with `pip install pytorch-gan-metrics`."
-        )
-    if device is None:
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-    is_mean, is_std = get_inception_score(
-        str(gen_dir),
+    metrics = torch_fidelity.calculate_metrics(
+        input1=str(gen_dir),
+        isc=True,
+        cuda=torch.cuda.is_available() if device is None else (device == "cuda"),
         batch_size=batch_size,
-        splits=splits,
-        device=device,
+        verbose=False,
     )
+    is_mean = metrics.get("inception_score_mean")
+    is_std = metrics.get("inception_score_std")
+    if is_mean is None or is_std is None:
+        raise RuntimeError(f"torch-fidelity did not return inception score keys. Got keys: {sorted(metrics.keys())}")
     return float(is_mean), float(is_std)
 
 
@@ -289,10 +283,7 @@ def main() -> None:
 
         is_mean = is_std = None
         if args.compute_is:
-            if not HAS_PYTORCH_GAN_METRICS:
-                print("WARNING: pytorch-gan-metrics not installed; skipping Inception Score.")
-            else:
-                is_mean, is_std = compute_inception_score(gen_dir=gen_dir, device=device)
+            is_mean, is_std = compute_inception_score(gen_dir=gen_dir, device=device)
 
         results.append(
             {

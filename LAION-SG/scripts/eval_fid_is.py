@@ -15,7 +15,7 @@ import subprocess
 import torch
 from pytorch_fid.fid_score import calculate_fid_given_paths
 import wandb
-from pytorch_gan_metrics import get_inception_score
+import torch_fidelity
 
 
 def run_generation_for_checkpoint(
@@ -92,17 +92,21 @@ def compute_inception_score(
     device: str | None = None,
 ) -> tuple[float, float]:
     """
-    Compute Inception Score for gen_dir using pytorch-gan-metrics.
+    Compute Inception Score for gen_dir using torch-fidelity.
     """
-    if device is None:
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-
-    is_mean, is_std = get_inception_score(
-        os.path.abspath(gen_dir),
+    # torch-fidelity computes IS over a directory of images.
+    # It expects consistent image decode; use JPEG outputs where possible.
+    metrics = torch_fidelity.calculate_metrics(
+        input1=os.path.abspath(gen_dir),
+        isc=True,
+        cuda=torch.cuda.is_available() if device is None else (device == "cuda"),
         batch_size=batch_size,
-        splits=splits,
-        device=device,
+        verbose=False,
     )
+    is_mean = metrics.get("inception_score_mean")
+    is_std = metrics.get("inception_score_std")
+    if is_mean is None or is_std is None:
+        raise RuntimeError(f"torch-fidelity did not return inception score keys. Got keys: {sorted(metrics.keys())}")
     return float(is_mean), float(is_std)
 
 
