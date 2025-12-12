@@ -1,38 +1,6 @@
 #!/usr/bin/env python3
 """
-Interactive caption → scene-graph → image chat pipeline (controller).
-
-This script does NOT train models. It provides a thin LLM-based controller
-for test-time interaction:
-
-1) Initialize a scene graph from a user caption (+ optional constraints):
-
-   python chat_sg_pipeline.py init \
-       --examples_json vg_train_clean_laion.json \
-       --caption "a purple couch next to a window in a cozy living room" \
-       --extra_constraints "must contain a purple couch; at least one window" \
-       --sg_out user_sg_state.json \
-       --model gpt-4o-mini
-
-2) Edit an existing scene graph with a follow-up instruction:
-
-   python chat_sg_pipeline.py edit \
-       --sg_in user_sg_state.json \
-       --instruction "change the red bag to a blue bag" \
-       --sg_out user_sg_state.json \
-       --model gpt-4o-mini
-
-Then you can render images from the current scene graph state using test_laion2.py:
-
-   python test_laion2.py \
-       --pretrained_sgencoder_path checkpoints/baseline3_100.pt \
-       --test_json_path user_sg_state.json \
-       --output_dir output/user_chat_session \
-       --num_samples 1 \
-       --image_dir /content/SGDiff/datasets/vg/images \
-       --cache_dir /content/.cache/huggingface \
-       --stable_diffusion_checkpoint stabilityai/stable-diffusion-xl-base-1.0 \
-       --image_size 512
+Interactive caption to scene-graph to image chat pipeline (controller).
 """
 
 import argparse
@@ -41,10 +9,8 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-try:
-    from openai import OpenAI
-except ImportError:  # pragma: no cover
-    OpenAI = None  # type: ignore
+from openai import OpenAI
+
 
 
 SYSTEM_PROMPT_INIT = """You are a scene graph designer for images.
@@ -52,8 +18,8 @@ SYSTEM_PROMPT_INIT = """You are a scene graph designer for images.
 Your job:
 - Given a caption (and optional extra constraints), produce a structured
   scene graph in JSON with the following keys:
-    - "items": list of objects { "item_id", "label", "attributes", "global_item_id" }
-    - "relations": list of relations { "item1", "item2", "relation" }
+    - "items": list of objects {"item_id", "label", "attributes", "global_item_id"}
+    - "relations": list of relations { "item1", "item2", "relation"}
     - "constraints": OPTIONAL list of constraints
       (types: presence, attribute, relation, count).
 
@@ -71,12 +37,12 @@ Rules:
     * presence:  {"type": "presence", "object": "...", "polarity": "positive"|"negative"}
     * attribute: {"type": "attribute", "object": "...", "attribute": "..."}
     * relation:  {"type": "relation", "subject": "...", "predicate": "...", "object": "..."}
-    * count:     {"type": "count", "object": "...", "operator": ">=|<=|==", "value": N}
+    * count:     {"type": "count",   "object": "...", "operator": ">=|<=|==", "value": N}
 - Stay faithful to the caption and extra constraints.
 - Be detailed but do NOT invent entirely new unrelated scenes.
 
 Output:
-- Return a SINGLE JSON object with keys: "items", "relations", and optionally "constraints".
+- Return a single JSON object with keys: "items", "relations", and optionally "constraints".
 """
 
 
@@ -96,7 +62,7 @@ Your job:
 - Update constraints to reflect the new state when appropriate.
 
 Output:
-- Return a SINGLE JSON object with updated "items", "relations", and optionally "constraints".
+- Return a single JSON object with updated "items", "relations", and optionally "constraints".
 """
 
 
@@ -114,8 +80,9 @@ def _build_init_user_prompt(
     caption: str,
     extra_constraints: Optional[str],
     examples: Optional[List[Dict[str, Any]]] = None,
-) -> str:
-    """Build a few-shot style prompt for initial caption→SG."""
+):
+
+    """Build a few-shot style prompt for initial caption→SG, return back in text str"""
     parts: List[str] = []
 
     if examples:
@@ -223,19 +190,18 @@ def run_edit(args: argparse.Namespace) -> None:
         raise ValueError(f"No entries in sg_in: {args.sg_in}")
     current_sg = data[0]
 
-    # We only expose the SG part to the editor (not name/img_id)
+    # We only expose the SG part to the editor 
     sg_core = {
         "items": current_sg.get("items", []),
         "relations": current_sg.get("relations", []),
     }
-    if "constraints" in current_sg:
-        sg_core["constraints"] = current_sg["constraints"]
+    if "constraints" in current_sg: sg_core["constraints"] = current_sg["constraints"]
 
     user_prompt = _build_edit_user_prompt(sg_core, args.instruction)
     raw = _call_llm(SYSTEM_PROMPT_EDIT, user_prompt, model=args.model, temperature=args.temperature)
     new_sg = _extract_json(raw)
 
-    # Merge back into entry, keeping name/img_id/caption_ori
+    # Merge back into entry
     updated_entry = dict(current_sg)
     updated_entry["items"] = new_sg.get("items", [])
     updated_entry["relations"] = new_sg.get("relations", [])
@@ -251,7 +217,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Chat-style caption↔SG controller for SDXL-SG.")
     subparsers = parser.add_subparsers(dest="mode", required=True)
 
-    # init mode: caption (+constraints) → new SG
+    # starting mode1!
     p_init = subparsers.add_parser("init", help="Initialize a scene graph from a caption.")
     p_init.add_argument("--examples_json", type=Path, default=None,
                         help="LAION-style JSON with training SG examples for few-shot.")
@@ -292,14 +258,8 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    if args.mode == "init":
-        run_init(args)
-    elif args.mode == "edit":
-        run_edit(args)
-    else:  # pragma: no cover
-        raise ValueError(f"Unknown mode: {args.mode}")
-
-
+    if args.mode == "init": run_init(args)
+    elif args.mode == "edit": run_edit(args)
 if __name__ == "__main__":
     main()
 

@@ -1,33 +1,6 @@
 #!/usr/bin/env python3
 """
-Caption → Scene Graph (+ optional constraints) via LLM with many-shot VG examples.
-
-This script does NOT train a model; it uses in-context learning (few-shot prompting)
-on top of an external LLM (e.g., OpenAI GPT) to convert captions into LAION-SG style
-scene graphs.
-
-Usage (example with OpenAI):
-
-    export OPENAI_API_KEY=sk-...
-    python caption_to_sg_llm.py \
-        --examples_json vg_train.json \
-        --input_json vg_val.json \
-        --output_json vg_val_llm_sg.json \
-        --num_shots 8 \
-        --max_samples 50 \
-        --model gpt-4o-mini
-
-For each entry in input_json, we read:
-    - caption_ori   (caption)
-and ask the LLM to generate:
-    - items         (list of {item_id, label, attributes, global_item_id})
-    - relations     (list of {item1, item2, relation})
-    - optionally constraints (if ExtraConstraints are provided in the prompt)
-
-At inference-time you can also provide user constraints in natural language, e.g.:
-    "Constraints: must contain a red car; at least two people"
-and the LLM is instructed to map those into the 4 constraint types
-(presence, attribute, relation, count) when possible.
+Caption to Scene Graph (+ optional constraints) via LLM with many-shot VG examples.
 """
 
 import argparse
@@ -37,11 +10,8 @@ import random
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-try:
-    # OpenAI >=1.0 style client
-    from openai import OpenAI
-except ImportError:  # pragma: no cover - library may not be installed by default
-    OpenAI = None  # type: ignore
+from openai import OpenAI
+
 
 SYSTEM_PROMPT = """You are a model that converts image captions into structured scene graphs
 in the following JSON format (LAION-SG style), and you MUST think step by step
@@ -90,7 +60,7 @@ STAGE 2 - SCENE GRAPH CONSTRUCTION
         "relation": "next to"
       }
 
-  - "constraints": OPTIONAL list of constraints:
+  - "constraints": optional list of constraints:
       * presence:  {"type": "presence", "object": "...", "polarity": "positive"|"negative"}
       * attribute: {"type": "attribute", "object": "...", "attribute": "..."}
       * relation:  {"type": "relation", "subject": "...", "predicate": "...", "object": "..."}
@@ -101,14 +71,14 @@ Rules for items and relations:
 - attributes is a list of short adjectives (colors, sizes, materials, states).
 - item_id are integers starting from 0; global_item_id can equal item_id.
 - relations[i].item1 and relations[i].item2 must refer to item_id values.
-- If your reasoning or constraints indicate there are MULTIPLE instances of an
-  object (e.g., "several desks", "two computers"), you SHOULD create multiple
+- If your reasoning or constraints indicate there are multiple instances of an
+  object (e.g., "several desks", "two computers"), you should create multiple
   items with the same label but different item_id values (0,1,2,...) instead of
   representing all of them by a single item.
 
 Rules for constraints:
-- constraints is OPTIONAL, but when present must use the schemas above.
-- You SHOULD convert the most important facts from your reasoning into constraints
+- constraints is optionaL, but when present must use the schemas above.
+- You should convert the most important facts from your reasoning into constraints
   (e.g., presence of key objects, critical relations, important counts).
 - If the user provides an ExtraConstraints section, interpret each natural-language
   constraint and, when possible, map it to exactly ONE of:
@@ -180,11 +150,7 @@ def build_few_shot_prompt(
 
 def call_llm(prompt: str, model: str = "gpt-4o-mini", temperature: float = 0.2) -> str:
     """Call the external LLM and return the raw text response."""
-    if OpenAI is None:
-        raise RuntimeError(
-            "openai package not installed. Please `pip install openai` and "
-            "set OPENAI_API_KEY."
-        )
+
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         raise RuntimeError("OPENAI_API_KEY environment variable is not set.")
@@ -208,8 +174,7 @@ def extract_json_block(text: str) -> Dict[str, Any]:
     """
     first = text.find("{")
     last = text.rfind("}")
-    if first == -1 or last == -1 or last <= first:
-        raise ValueError("No JSON object found in LLM output.")
+    
     snippet = text[first : last + 1]
     return json.loads(snippet)
 
@@ -228,7 +193,6 @@ def iterate_targets(path: Path, max_samples: Optional[int] = None):
         data = data[:max_samples]
     for entry in data:
         yield entry
-
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Caption → Scene Graph via LLM (many-shot).")
@@ -250,7 +214,6 @@ def parse_args() -> argparse.Namespace:
                    help="Random seed for example sampling.")
     return p.parse_args()
 
-
 def main() -> None:
     args = parse_args()
 
@@ -265,7 +228,7 @@ def main() -> None:
         if not caption:
             continue
 
-        # Optionally, a future extension: read user constraints from entry["extra_constraints"]
+        # NOTE: Optionally, a future extension: read user constraints from entry["extra_constraints"]
         extra_constraints_text = entry.get("extra_constraints", None)
 
         prompt = build_few_shot_prompt(
@@ -281,7 +244,7 @@ def main() -> None:
             print(f"[WARN] Failed to parse LLM output for index {i}: {e}")
             continue
 
-        # Attach original caption + id for traceability
+        # Append original caption 
         sg_entry = {
             "name": entry.get("name"),
             "img_id": entry.get("img_id"),
@@ -300,8 +263,6 @@ def main() -> None:
     print(f"Saving {len(outputs)} entries to {args.output_json} ...")
     args.output_json.write_text(json.dumps(outputs, indent=2))
     print("Done.")
-
-
 if __name__ == "__main__":
     main()
 

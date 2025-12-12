@@ -1,18 +1,6 @@
 #!/usr/bin/env python3
 """
 Add auto-generated constraints to existing LAION-style JSON files.
-
-This script reads a LAION-SG JSON file, generates constraints for each entry
-based on its scene graph content, and outputs a new JSON with constraints added.
-
-Usage:
-    python add_constraints_to_json.py \
-        --input_json vg_train.json \
-        --output_json vg_train_with_constraints.json \
-        --max_presence 2 \
-        --max_attribute 2 \
-        --max_relation 1 \
-        --seed 42
 """
 
 import argparse
@@ -56,10 +44,11 @@ def add_constraints_to_entry(
     seed: int
 ) -> dict:
     """Add constraints to a single JSON entry."""
+
     items = entry.get("items", [])
     relations = entry.get("relations", [])
     
-    # Use entry-specific seed for reproducibility
+    # Using entry-specific seed for reproducibility
     entry_seed = seed + hash(entry.get("img_id", "")) % 10000
     
     constraints = generate_constraints_from_scene_graph(
@@ -120,7 +109,7 @@ def main():
         json.dump(data, f, indent=2)
     
     # Print statistics
-    print(f"\n=== Statistics ===")
+    print(f"-x-x-x- Statistics -x-x-x-")
     print(f"Total entries: {len(data)}")
     print(f"Total constraints: {total_constraints}")
     print(f"Average constraints per image: {total_constraints / len(data):.1f}")
@@ -129,7 +118,7 @@ def main():
         print(f"  {ctype}: {count}")
     
     # Show sample entry
-    print(f"\n=== Sample Entry ===")
+    print(f"-x-x-x- Sample Entry -x-x-x-")
     sample = data[0] if data else {}
     print(f"Image: {sample.get('name', 'N/A')}")
     print(f"Caption: {sample.get('caption_ori', 'N/A')}")

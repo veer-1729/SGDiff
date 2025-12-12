@@ -20,7 +20,7 @@ class ConstraintType(Enum):
 
 @dataclass
 class PresenceConstraint:
-    """Constraint: image must (not) contain this object."""
+    """Constraint: image must contain this object or not"""
     object: str
     polarity: Literal["positive", "negative"] = "positive"
     
@@ -32,7 +32,7 @@ class PresenceConstraint:
         }
     
     def to_triple(self) -> Dict[str, str]:
-        """Convert to sgEncoder-compatible triple format."""
+        """Convert to sgEncoder-compatible triple format"""
         if self.polarity == "positive":
             return {
                 "item1": "[MUST_HAVE]",
@@ -49,7 +49,7 @@ class PresenceConstraint:
 
 @dataclass
 class AttributeConstraint:
-    """Constraint: object must have this attribute."""
+    """Constraint: object must have this attribute"""
     object: str
     attribute: str
     
@@ -61,7 +61,7 @@ class AttributeConstraint:
         }
     
     def to_triple(self) -> Dict[str, str]:
-        """Convert to sgEncoder-compatible triple format."""
+        """Convert to sgEncoder-compatible triple format"""
         return {
             "item1": "[ATTR]",
             "relation": "describes",
@@ -160,7 +160,6 @@ def constraints_to_triples(constraints: List[Dict[str, Any]]) -> List[Dict[str, 
         triples.append(constraint.to_triple())
     return triples
 
-
 def generate_constraints_from_scene_graph(
     items: List[Dict[str, Any]],
     relations: List[Dict[str, Any]],
@@ -169,24 +168,10 @@ def generate_constraints_from_scene_graph(
     max_relation: int = 1,
     include_count: bool = True,
     seed: Optional[int] = None
-) -> List[Dict[str, Any]]:
+):
     """
     Auto-generate constraints from an existing scene graph.
     
-    This ensures constraints are grounded in actual image content,
-    making them learnable from the training data.
-    
-    Args:
-        items: List of item dicts with 'label', 'attributes', 'item_id'
-        relations: List of relation dicts with 'item1', 'item2', 'relation'
-        max_presence: Max number of presence constraints to generate
-        max_attribute: Max number of attribute constraints to generate
-        max_relation: Max number of relation constraints to generate
-        include_count: Whether to include count constraints
-        seed: Random seed for reproducibility
-    
-    Returns:
-        List of constraint dicts
     """
     if seed is not None:
         random.seed(seed)
@@ -194,7 +179,7 @@ def generate_constraints_from_scene_graph(
     constraints = []
     item_dict = {item["item_id"]: item for item in items}
     
-    # 1. Presence constraints - sample objects that exist
+    # 1. Presence constraints 
     if items and max_presence > 0:
         sampled_items = random.sample(items, min(max_presence, len(items)))
         for item in sampled_items:
@@ -202,7 +187,7 @@ def generate_constraints_from_scene_graph(
                 PresenceConstraint(object=item["label"]).to_dict()
             )
     
-    # 2. Attribute constraints - for objects with attributes
+    # 2. Attribute constraints 
     items_with_attrs = [i for i in items if i.get("attributes")]
     if items_with_attrs and max_attribute > 0:
         sampled = random.sample(items_with_attrs, min(max_attribute, len(items_with_attrs)))
@@ -212,7 +197,7 @@ def generate_constraints_from_scene_graph(
                 AttributeConstraint(object=item["label"], attribute=attr).to_dict()
             )
     
-    # 3. Relation constraints - sample existing relations
+    # 3. Relation constraints 
     if relations and max_relation > 0:
         sampled_rels = random.sample(relations, min(max_relation, len(relations)))
         for rel in sampled_rels:
@@ -226,7 +211,7 @@ def generate_constraints_from_scene_graph(
                 ).to_dict()
             )
     
-    # 4. Count constraints - for objects appearing multiple times
+    # 4. Count constraints
     if include_count:
         label_counts = {}
         for item in items:

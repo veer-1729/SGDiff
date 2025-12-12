@@ -19,15 +19,13 @@ NUMBER_WORDS = {
     "few": 2, "several": 3, "many": 3, "dozen": 12,
 }
 
-# Common spatial/action prepositions for relation mining
+# Common spatial / action prepositions for relation mining
 RELATION_WORDS = {
     # spatial
     "on", "in", "at", "by", "near", "beside", "behind", "under", "above",
     "below", "over", "inside", "outside", "between", "among", "through",
     "across", "along", "around", "against", "towards", "toward",
-    # compound spatial (we'll match individual tokens)
     "next", "front", "top", "bottom", "left", "right", "side",
-    # actions / positional verbs
     "sitting", "standing", "lying", "walking", "running", "riding",
     "holding", "wearing", "eating", "playing", "watching", "looking",
     "facing", "leaning", "hanging", "flying", "parked", "placed",
@@ -50,14 +48,11 @@ COMMON_ATTRIBUTES = {
     "striped", "spotted", "plaid", "checkered", "floral", "plain",
 }
 
-
 def _normalize(text: str) -> str:
     return text.lower().strip()
 
-
 def _simple_tokenize(text: str) -> List[str]:
     return re.findall(r"\w+", text.lower())
-
 
 def _get_label_forms(label: str) -> Set[str]:
     """Return singular and simple plural forms of a label."""
@@ -68,7 +63,7 @@ def _get_label_forms(label: str) -> Set[str]:
         forms.add(label + "es")  # glass -> glasses
     else:
         forms.add(label[:-1])  # dogs -> dog
-    # Handle -y plurals (e.g., puppy -> puppies, but this is approximate)
+
     if label.endswith("y") and len(label) > 2 and label[-2] not in "aeiou":
         forms.add(label[:-1] + "ies")
     return forms
@@ -78,7 +73,6 @@ def _find_label_positions(tokens: List[str], label: str) -> List[int]:
     """Find all token indices where the label (or its plural) appears."""
     forms = _get_label_forms(label)
     return [i for i, tok in enumerate(tokens) if tok in forms]
-
 
 def generate_constraints_from_caption_and_sg(
     caption: str,
@@ -92,31 +86,7 @@ def generate_constraints_from_caption_and_sg(
 ) -> List[Dict[str, Any]]:
     """
     Extract constraints from caption + scene graph.
-    
-    This function uses multiple heuristics to find constraints that reflect
-    what the caption explicitly mentions:
-    
-    - PRESENCE: objects whose label appears in caption
-    - ATTRIBUTE: 
-        1. SG attributes that appear in caption near/with that object
-        2. Common visual attributes mentioned in caption near an object
-    - RELATION:
-        1. SG relations where subj/obj/pred all appear in caption (loosely)
-        2. Caption-mined relations: pairs of objects with spatial words between
-    - COUNT: numeric/quantifier mentions followed by object labels
-    
-    Args:
-        caption: The image caption text
-        items: List of items from the scene graph
-        relations: List of relations from the scene graph
-        alias_map: Optional mapping for label normalization (e.g., "puppy" -> "dog")
-        max_presence: Max presence constraints to return
-        max_attribute: Max attribute constraints to return
-        max_relation: Max relation constraints to return
-        max_count: Max count constraints to return
-    
-    Returns:
-        List of constraint dicts with types: presence, attribute, relation, count
+    Returns: List of constraint dicts with types: presence, attribute, relation, count
     """
     caption_norm = " " + _normalize(caption) + " "
     tokens = _simple_tokenize(caption)
@@ -128,7 +98,7 @@ def generate_constraints_from_caption_and_sg(
         lab = _normalize(label)
         return alias_map.get(lab, lab)
     
-    # Build label -> items mapping
+    # Build label to items mapping
     label_to_items: Dict[str, List[Dict[str, Any]]] = {}
     for it in items:
         lab = canon_label(it["label"])
@@ -165,9 +135,8 @@ def generate_constraints_from_caption_and_sg(
             return True
         return False
     
-    # -------------------------
-    # 1) PRESENCE constraints
-    # -------------------------
+
+    # presence constraints
     presence_count = 0
     for lab in labels_in_caption:
         if max_presence is not None and presence_count >= max_presence:
@@ -175,12 +144,10 @@ def generate_constraints_from_caption_and_sg(
         if _add_constraint({"type": "presence", "object": lab, "polarity": "positive"}):
             presence_count += 1
     
-    # -------------------------
-    # 2) ATTRIBUTE constraints
-    # -------------------------
+    # att constraints
     attr_count = 0
     
-    # 2a) From SG attributes that appear in caption
+    # From SG attributes that appear in caption
     for it in items:
         if max_attribute is not None and attr_count >= max_attribute:
             break
@@ -195,7 +162,7 @@ def generate_constraints_from_caption_and_sg(
                 if _add_constraint({"type": "attribute", "object": lab, "attribute": attr_norm}):
                     attr_count += 1
     
-    # 2b) Caption-mined attributes: common visual attributes near object labels
+    # Caption-mined attributes: common visual attributes near object labels
     for lab in labels_in_caption:
         if max_attribute is not None and attr_count >= max_attribute:
             break
@@ -212,13 +179,12 @@ def generate_constraints_from_caption_and_sg(
                     if _add_constraint({"type": "attribute", "object": lab, "attribute": tok}):
                         attr_count += 1
     
-    # -------------------------
-    # 3) RELATION constraints
-    # -------------------------
+    # relation constraints
+   
     id_to_label = {it["item_id"]: canon_label(it["label"]) for it in items}
     rel_count = 0
     
-    # 3a) From SG relations that are supported by caption
+    # From SG relations that are supported by caption
     for rel in relations:
         if max_relation is not None and rel_count >= max_relation:
             break
@@ -256,7 +222,7 @@ def generate_constraints_from_caption_and_sg(
             if _add_constraint({"type": "relation", "subject": subj, "predicate": pred, "object": obj}):
                 rel_count += 1
     
-    # 3b) Caption-mined relations: pairs of objects with spatial words between
+    # Caption-mined relations: pairs of objects with spatial words between
     # This catches relations mentioned in caption but not in SG
     labels_list = list(labels_in_caption)
     for i, lab1 in enumerate(labels_list):
@@ -304,9 +270,8 @@ def generate_constraints_from_caption_and_sg(
                             rel_count += 1
                         break
     
-    # -------------------------
-    # 4) COUNT constraints
-    # -------------------------
+    # COUNT constraints
+   
     count_count = 0
     
     # Build label forms for matching

@@ -1,37 +1,6 @@
 #!/usr/bin/env python3
 """
 Clean / rewrite BLIP captions using VG scene graphs BEFORE VG→LAION conversion.
-
-Input:
-- VG HDF5 splits under --dataset_dir (e.g. datasets/vg/{train,val,test}.h5)
-- vocab.json with object / predicate vocab
-- captions.json created by caption_vg_subset.py:
-  {
-    "captions": [
-      {"image_path": "VG_100K/10.jpg", "caption": "..."},
-      ...
-    ]
-  }
-
-Output:
-- captions_clean.json with the SAME structure but cleaned captions:
-  {
-    "captions": [
-      {"image_path": "...", "caption": "<cleaned caption>"},
-      ...
-    ]
-  }
-
-Usage:
-
-    export OPENAI_API_KEY=sk-...
-    python clean_captions_with_sg.py \
-        --dataset_dir datasets/vg \
-        --vocab_json datasets/vg/vocab.json \
-        --captions_in datasets/vg/captions.json \
-        --captions_out datasets/vg/captions_clean.json \
-        --num_samples 100 \
-        --model gpt-4o-mini
 """
 
 import argparse
@@ -42,10 +11,8 @@ from typing import Any, Dict, List, Tuple
 
 import h5py
 
-try:
-    from openai import OpenAI
-except ImportError:  # pragma: no cover
-    OpenAI = None  # type: ignore
+from openai import OpenAI
+
 
 
 SYSTEM_PROMPT = """You are a caption rewriter that MUST stay grounded in the given scene graph.
@@ -135,7 +102,7 @@ def build_sg_index(
                     item = {
                         "item_id": len(items),
                         "label": label,
-                        "attributes": [],  # we ignore attrs here for simplicity
+                        "attributes": [],  # we ignore attrs (cause VG tpically has it empty) here for simplicity
                     }
                     slot_to_item[slot] = item["item_id"]
                     items.append(item)
@@ -225,14 +192,7 @@ def build_user_prompt(raw_caption: str, items: List[Dict[str, Any]], relations: 
 
 
 def call_llm(prompt: str, model: str, temperature: float) -> str:
-    if OpenAI is None:
-        raise RuntimeError(
-            "openai package not installed. Please `pip install openai` and "
-            "set OPENAI_API_KEY."
-        )
     api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        raise RuntimeError("OPENAI_API_KEY environment variable is not set.")
 
     client = OpenAI(api_key=api_key)
     resp = client.chat.completions.create(
@@ -289,7 +249,7 @@ def main() -> None:
         raw_caption = entry["caption"]
         sg = sg_index.get(rel_path)
         if sg is None:
-            # No SG info; keep original caption
+            # No SG info so keep original caption edge cases
             cleaned_entries.append(entry)
             continue
 
@@ -297,7 +257,7 @@ def main() -> None:
         try:
             new_caption = call_llm(user_prompt, model=args.model, temperature=args.temperature)
         except Exception as e:  # pragma: no cover
-            print(f"[WARN] LLM caption cleaning failed for {rel_path}: {e}")
+            print(f"WARNING: LLM caption cleaning failed for {rel_path}: {e}")
             cleaned_entries.append(entry)
             continue
 
@@ -306,7 +266,8 @@ def main() -> None:
         if (i + 1) % 10 == 0:
             print(f"Processed {i + 1} captions...")
 
-    # Preserve structure: {"captions": [...]}
+
+
     out_data = {"captions": cleaned_entries}
     args.captions_out.parent.mkdir(parents=True, exist_ok=True)
     args.captions_out.write_text(json.dumps(out_data, indent=2))

@@ -26,15 +26,12 @@ class ProjectionHead(nn.Module):
 
 
 def info_nce_loss(graph_embeds: torch.Tensor, text_embeds: torch.Tensor, temperature: float = 0.07):
-    """
-    Compute symmetric InfoNCE loss between graph and text embeddings.
-    graph_embeds: (B, D)
-    text_embeds:  (B, D)
-    """
+
+
     graph_norm = F.normalize(graph_embeds, dim=-1)
     text_norm = F.normalize(text_embeds, dim=-1)
 
-    logits = torch.matmul(graph_norm, text_norm.t()) / temperature  # (B, B)
+    logits = torch.matmul(graph_norm, text_norm.t()) / temperature  # NOTE: shape (B, B)
     targets = torch.arange(logits.size(0), device=logits.device)
 
     loss_g2t = F.cross_entropy(logits, targets)

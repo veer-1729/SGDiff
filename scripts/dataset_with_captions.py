@@ -3,13 +3,8 @@ from pathlib import Path
 
 from sg2im.data.vg import VgSceneGraphDataset
 
-try:
-    import torch
-    from torch.utils.data import DataLoader
-except ImportError:
-    torch = None
-    DataLoader = None
-
+import torch
+from torch.utils.data import DataLoader
 
 class VgSceneGraphWithCaptions(VgSceneGraphDataset):
     """
@@ -21,8 +16,6 @@ class VgSceneGraphWithCaptions(VgSceneGraphDataset):
         super().__init__(*args, **kwargs)
 
         captions_path = Path(captions_json)
-        if not captions_path.exists():
-            raise FileNotFoundError(f"Missing captions file: {captions_path}")
 
         with open(captions_path, "r") as f:
             data = json.load(f)
@@ -39,7 +32,7 @@ class VgSceneGraphWithCaptions(VgSceneGraphDataset):
         caption = self.caption_map.get(rel_path, "")
         return caption, image, objs, boxes, triples
 
-
+# wraaper function on top of the dataloader they gave us
 def build_dataloader(
     vocab_path: str,
     h5_path: str,
@@ -49,11 +42,6 @@ def build_dataloader(
     shuffle: bool = True,
     num_workers: int = 4,
 ):
-    """
-    Convenience helper to instantiate the dataset + DataLoader.
-    """
-    if torch is None or DataLoader is None:
-        raise ImportError("PyTorch is required to build the dataloader.")
 
     with open(vocab_path, "r") as f:
         vocab = json.load(f)

@@ -1,34 +1,7 @@
 #!/usr/bin/env python3
 """
 Convert SGDiff Visual Genome HDF5 splits into LAION-SG style JSON.
-
-Each entry in the output JSON looks like:
-{
-  "name": "VG_100K/10.jpg",
-  "img_id": "vg_10",
-  "caption_ori": "...",
-  "items": [
-    {
-      "item_id": 0,
-      "label": "boy",
-      "attributes": ["young"],
-      "global_item_id": 12345
-    },
-    ...
-  ],
-  "relations": [
-    {"item1": 0, "item2": 1, "relation": "flying"},
-    ...
-  ],
-  "constraints": [
-    {"type": "presence", "object": "boy", "polarity": "positive"},
-    {"type": "attribute", "object": "boy", "attribute": "young"},
-    ...
-  ]
-}
-
-This allows training or fine-tuning the SDXL-SG pipeline with VG data.
-Constraints are auto-generated from the scene graph to enable constraint-conditioned generation.
+Lot's of preprocessing done here.
 """
 from __future__ import annotations
 
@@ -39,15 +12,12 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 
-# Add LAION-SG to path for constraint imports BEFORE importing heuristic module
+# Add LAION-SG to path for constraint imports (NOTE: weird hyphen error so we need to do it this way)
 LAION_SG_PATH = Path(__file__).parent.parent / "LAION-SG"
 if LAION_SG_PATH.exists():
     sys.path.insert(0, str(LAION_SG_PATH))
 
-from sgEncoderTraining.constraints.heuristic_constraints import (
-    generate_constraints_from_caption_and_sg,
-)
-
+from sgEncoderTraining.constraints.heuristic_constraints import generate_constraints_from_caption_and_sg
 import h5py
 
 
@@ -73,41 +43,46 @@ def build_attribute_lookup(
     attributes_json: Path | None,
     valid_object_ids: set[int],
     attr_names_list: List[str],
-) -> Dict[int, List[str]]:
+):
+    # edge case 
     if not attributes_json or not attributes_json.exists():
         return {}
+
     attr_set = set(attr_names_list)
     if not attr_set:
-        return {}
+        return {} # NOTE to self: edge case sometimes vg does not have associated attributes
+
     lookup: Dict[int, List[str]] = {}
     with attributes_json.open("r") as f:
         entries = json.load(f)
+
     for entry in entries:
         for obj in entry.get("attributes", []):
             object_id = obj.get("object_id")
             if object_id is None or object_id not in valid_object_ids:
                 continue
+
             names = obj.get("attributes", [])
             filtered = [name for name in names if name in attr_set]
             if filtered:
                 lookup[object_id] = filtered
     return lookup
 
-
 def convert_split(
     h5_path: Path,
     vocab_path: Path,
     captions_json: Path,
-    attributes_json: Path | None,
+    attributes_json: Path|None,
     output_path: Path,
     max_samples: int | None = None,
     # Constraint generation settings (for heuristic_caption+SG constraints)
     generate_constraints: bool = True,
-    max_presence: int = 2,
-    max_attribute: int = 2,
-    max_relation: int = 1,
-    max_count: int = 1,
-) -> None:
+    max_presence: int=2,
+    max_attribute: int =2,
+    max_relation: int=1,
+    max_count: int=1,
+):
+
     with vocab_path.open("r") as f:
         vocab = json.load(f)
     caption_map = build_caption_map(captions_json)
@@ -119,6 +94,7 @@ def convert_split(
     output: List[dict] = []
 
     with h5py.File(h5_path, "r") as f:
+        # match all of the main same sections first 
         image_paths = f["image_paths"]
         image_ids = f["image_ids"][:]
         object_ids = f["object_ids"][:]
@@ -142,6 +118,8 @@ def convert_split(
                 filtered_indices.append(idx)
 
         indices = filtered_indices
+
+        # only give back a small subset of the data for finetuning
         if max_samples is not None and max_samples < len(indices):
             random.shuffle(indices)
             indices = indices[:max_samples]
@@ -160,28 +138,38 @@ def convert_split(
 
             items = []
             slot_to_item = {}
+            # go through each object in the image
             for slot in range(num_obj):
                 name_idx = int(object_names[idx, slot])
-                if name_idx < 0:
+                if name_idx < 0: # edge case
                     continue
+
                 label = obj_names_list[name_idx]
                 object_id = int(object_ids[idx, slot])
                 attributes = attr_lookup.get(object_id, [])
+
+                # second case: no attributes associated with the object
                 if not attributes and attr_names_list:
                     attr_count = int(attributes_per_obj[idx, slot]) if attributes_per_obj.ndim == 2 else 0
                     if attr_count > 0 and object_attributes is not None:
+
+                        # edge case: object attributes are stored in a 3D array
                         if object_attributes.ndim == 3:
                             attr_slice = object_attributes[idx, slot, :attr_count]
                         else:
                             attr_slice = object_attributes[attr_row, :attr_count]
+
                         tmp = []
                         for attr_idx in attr_slice:
                             attr_idx = int(attr_idx)
                             if 0 <= attr_idx < len(attr_names_list):
                                 tmp.append(attr_names_list[attr_idx])
+
                         attributes = tmp
+
                 if object_attributes is not None and object_attributes.ndim == 2:
                     attr_row += 1
+
                 item = {
                     "item_id": len(items),
                     "label": label,
@@ -194,12 +182,14 @@ def convert_split(
             if not items:
                 continue
 
+            # go through each relationship in the image do same as attributes
             relations = []
             global_ids = []
             for rel_idx in range(num_rel):
                 sub_slot = int(rel_subjects[idx, rel_idx])
                 obj_slot = int(rel_objects[idx, rel_idx])
                 pred_idx = int(rel_predicates[idx, rel_idx])
+                # edge case : relationship is not valid
                 if (
                     sub_slot not in slot_to_item
                     or obj_slot not in slot_to_item
@@ -233,7 +223,7 @@ def convert_split(
                 "global_ids": global_ids,
             }
 
-            # Generate caption+SG-based constraints if enabled and heuristic is available
+            # Generate caption+ SG based constraints if enabled and heuristic is available
             if generate_constraints:
                 entry["constraints"] = generate_constraints_from_caption_and_sg(
                     caption=caption,
@@ -254,6 +244,7 @@ def convert_split(
 
 
 def main():
+    # create parser for neatness
     parser = argparse.ArgumentParser(description="Convert VG HDF5 splits to LAION-SG JSON with constraints.")
     parser.add_argument("--h5_path", type=Path, required=True, help="Path to VG split HDF5 file.")
     parser.add_argument("--vocab_json", type=Path, default=Path("datasets/vg/vocab.json"))
@@ -262,7 +253,7 @@ def main():
     parser.add_argument("--output_json", type=Path, required=True)
     parser.add_argument("--max_samples", type=int, default=None, help="Optional limit for debugging.")
     
-    # Constraint generation arguments (for heuristic caption+SG constraints)
+    # constraints
     parser.add_argument("--no_constraints", action="store_true",
                         help="Disable constraint generation")
     parser.add_argument("--max_presence", type=int, default=2,
@@ -290,7 +281,7 @@ def main():
         max_count=None if args.no_count else 1,
     )
     
-    # Print constraint statistics if enabled
+    # Print constraint statistics
     if not args.no_constraints:
         with args.output_json.open("r") as f:
             data = json.load(f)
@@ -303,12 +294,12 @@ def main():
                 if ctype in type_counts:
                     type_counts[ctype] += 1
         
-        print(f"\n=== Constraint Statistics ===")
+        # NOTE: This is the mini stats that we used to decide upon heuristics using trial and error
+        print(f"\n-x-x-x-Constraint Statistics-x-x-x-")
         print(f"Total constraints: {total_constraints}")
         print(f"Average per image: {total_constraints / len(data):.1f}" if data else "N/A")
         for ctype, count in type_counts.items():
             print(f"  {ctype}: {count}")
-
 
 if __name__ == "__main__":
     main()

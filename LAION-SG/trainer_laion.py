@@ -22,16 +22,8 @@ from diffusers import (
 )
 from diffusers.utils.import_utils import is_xformers_available
 from accelerate import Accelerator, DistributedDataParallelKwargs
-from sgEncoderTraining.training.lora import (
-    inject_lora_into_unet,
-    get_lora_params,
-    save_lora_weights,
-    load_lora_weights,
-)
-from sgEncoderTraining.training.contrastive import (
-    ProjectionHead,
-    info_nce_loss,
-)
+from sgEncoderTraining.training.lora import (inject_lora_into_unet, get_lora_params, save_lora_weights, load_lora_weights)
+from sgEncoderTraining.training.contrastive import ( ProjectionHead, info_nce_loss)
 
 accelerator = Accelerator(kwargs_handlers=[DistributedDataParallelKwargs(find_unused_parameters=True)])
 
@@ -238,6 +230,8 @@ def trainer():
             checkpoint = torch.load(args.pretrained_sgencoder_path, map_location=accelerator.device)
             state_dict = checkpoint.get("state_dict", checkpoint)
             missing, unexpected = model.load_state_dict(state_dict, strict=False)
+
+            
             if missing or unexpected:
                 logging.warning("Missing keys: %s", missing)
                 logging.warning("Unexpected keys: %s", unexpected)
