@@ -194,8 +194,10 @@ def main() -> None:
             "num_samples": args.num_samples,
             "checkpoints": args.checkpoints,
             "compute_is": args.compute_is,
+            "fid_batch_size": args.fid_batch_size,
         },
     )
+    wandb.define_metric("*", step_metric="step")
     summary_table = wandb.Table(columns=["checkpoint", "fid", "is_mean", "is_std"])
 
     real_dir = os.path.abspath(args.real_dir)
@@ -204,7 +206,7 @@ def main() -> None:
 
     results: list[dict] = []
 
-    for ckpt in args.checkpoints:
+    for step_idx, ckpt in enumerate(args.checkpoints):
         ckpt_name = Path(ckpt).stem  # e.g., epoch_49_iter_10583
         gen_dir = os.path.join(output_root, ckpt_name)
 
@@ -228,8 +230,9 @@ def main() -> None:
 
         # log to wandb
         wandb.log({
-            f"fid/{ckpt_name}": fid,
-            "current_checkpoint": ckpt_name,
+            "fid": fid,
+            "checkpoint": ckpt_name,
+            "step": step_idx,
         })
 
 
@@ -245,9 +248,10 @@ def main() -> None:
             )
             print(f"Inception Score ({ckpt_name}): {is_mean:.4f} ± {is_std:.4f}")
             wandb.log({
-                f"inception_score_mean/{ckpt_name}": is_mean,
-                f"inception_score_std/{ckpt_name}": is_std,
-                "current_checkpoint": ckpt_name,
+                "is_mean": is_mean,
+                "is_std": is_std,
+                "checkpoint": ckpt_name,
+                "step": step_idx,
             })
 
 

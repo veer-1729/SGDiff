@@ -236,8 +236,10 @@ def main() -> None:
             "num_samples": max_samples,
             "checkpoints": [str(c) for c in args.checkpoints],
             "compute_is": args.compute_is,
+            "fid_batch_size": args.fid_batch_size,
         },
     )
+    wandb.define_metric("*", step_metric="step")
     summary_table = wandb.Table(columns=["checkpoint", "fid", "is_mean", "is_std"])
 
     # 1) Build real subset directory + subset JSON
@@ -268,7 +270,7 @@ def main() -> None:
 
     # 3) Generate images + compute metrics per checkpoint
     results = []
-    for ckpt in args.checkpoints:
+    for step_idx, ckpt in enumerate(args.checkpoints):
         ckpt = ckpt.resolve()
         ckpt_name = ckpt.stem
         gen_dir = out_root / "generated" / ckpt_name
@@ -308,14 +310,16 @@ def main() -> None:
         if is_mean is not None:
             print(f"IS:  {is_mean:.4f} ± {is_std:.4f}")
         wandb.log({
-            f"fid/{ckpt_name}": fid,
-            "current_checkpoint": ckpt_name,
+            "fid": fid,
+            "checkpoint": ckpt_name,
+            "step": step_idx,
         })
         if is_mean is not None:
             wandb.log({
-                f"inception_score_mean/{ckpt_name}": is_mean,
-                f"inception_score_std/{ckpt_name}": is_std,
-                "current_checkpoint": ckpt_name,
+                "is_mean": is_mean,
+                "is_std": is_std,
+                "checkpoint": ckpt_name,
+                "step": step_idx,
             })
         summary_table.add_data(ckpt_name, fid, is_mean, is_std)
 
