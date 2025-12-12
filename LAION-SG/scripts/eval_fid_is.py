@@ -228,14 +228,6 @@ def main() -> None:
         fid = compute_fid(real_dir=real_dir, gen_dir=gen_dir, batch_size=args.fid_batch_size, device=device)
         print(f"FID ({ckpt_name}): {fid:.4f}")
 
-        # log to wandb
-        wandb.log({
-            "fid": fid,
-            "checkpoint": ckpt_name,
-            "step": step_idx,
-        })
-
-
         # 3) Optionally compute Inception Score
         is_mean = is_std = None
         if args.compute_is:
@@ -247,13 +239,15 @@ def main() -> None:
                 device=device,
             )
             print(f"Inception Score ({ckpt_name}): {is_mean:.4f} ± {is_std:.4f}")
-            wandb.log({
-                "is_mean": is_mean,
-                "is_std": is_std,
-                "checkpoint": ckpt_name,
-                "step": step_idx,
-            })
-
+        log_data = {
+            "fid": fid,
+            "checkpoint": ckpt_name,
+            "step": step_idx,
+        }
+        if is_mean is not None:
+            log_data["is_mean"] = is_mean
+            log_data["is_std"] = is_std
+        wandb.log(log_data)
 
         results.append(
             {
@@ -265,7 +259,6 @@ def main() -> None:
             }
         )
 
-        # add to summary table
         summary_table.add_data(
             ckpt_name,
             fid,

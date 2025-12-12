@@ -309,18 +309,15 @@ def main() -> None:
         print(f"FID: {fid:.4f}")
         if is_mean is not None:
             print(f"IS:  {is_mean:.4f} ± {is_std:.4f}")
-        wandb.log({
+        log_data = {
             "fid": fid,
             "checkpoint": ckpt_name,
             "step": step_idx,
-        })
+        }
         if is_mean is not None:
-            wandb.log({
-                "is_mean": is_mean,
-                "is_std": is_std,
-                "checkpoint": ckpt_name,
-                "step": step_idx,
-            })
+            log_data["is_mean"] = is_mean
+            log_data["is_std"] = is_std
+        wandb.log(log_data)
         summary_table.add_data(ckpt_name, fid, is_mean, is_std)
 
     # 4) Save results
