@@ -209,6 +209,12 @@ def parse_args() -> argparse.Namespace:
 
     # Metrics
     p.add_argument("--compute_is", action="store_true", help="Also compute Inception Score (requires pytorch-gan-metrics).")
+    p.add_argument(
+        "--fid_batch_size",
+        type=int,
+        default=1,
+        help="Batch size for pytorch-fid. Use 1 to avoid crashes when images have different sizes.",
+    )
 
     return p.parse_args()
 
@@ -277,7 +283,7 @@ def main() -> None:
             cache_dir=args.cache_dir,
         )
 
-        fid = compute_fid(real_dir=real_dir, gen_dir=gen_dir, device=device)
+        fid = compute_fid(real_dir=real_dir, gen_dir=gen_dir, device=device, batch_size=args.fid_batch_size)
 
         is_mean = is_std = None
         if args.compute_is:

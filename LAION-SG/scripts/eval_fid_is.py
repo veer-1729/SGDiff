@@ -163,6 +163,12 @@ def parse_args() -> argparse.Namespace:
         help="Also compute Inception Score (requires pytorch-gan-metrics).",
     )
     p.add_argument(
+        "--fid_batch_size",
+        type=int,
+        default=1,
+        help="Batch size for pytorch-fid. Use 1 to avoid crashes when images have different sizes.",
+    )
+    p.add_argument(
         "--use_lora",
         action="store_true",
         help="Pass --use_lora to test_laion2.py.",
@@ -217,7 +223,7 @@ def main() -> None:
 
         # 2) Compute FID
         print(f"\n=== Computing FID for checkpoint: {ckpt} ===")
-        fid = compute_fid(real_dir=real_dir, gen_dir=gen_dir, batch_size=50, device=device)
+        fid = compute_fid(real_dir=real_dir, gen_dir=gen_dir, batch_size=args.fid_batch_size, device=device)
         print(f"FID ({ckpt_name}): {fid:.4f}")
 
         # log to wandb
